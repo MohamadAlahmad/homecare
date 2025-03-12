@@ -1,0 +1,2 @@
+/Users/wassimpharaon/Projects/homecare/android/app/.cxx/RelWithDebInfo/i4g6m55l/x86/CMakeFiles/edit_cache.dir
+/Users/wassimpharaon/Projects/homecare/android/app/.cxx/RelWithDebInfo/i4g6m55l/x86/CMakeFiles/rebuild_cache.dir

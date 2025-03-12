@@ -1,0 +1,2 @@
+/Users/wassimpharaon/Projects/homecare/android/app/.cxx/Debug/2e2g341p/armeabi-v7a/CMakeFiles/edit_cache.dir
+/Users/wassimpharaon/Projects/homecare/android/app/.cxx/Debug/2e2g341p/armeabi-v7a/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,62 @@
+name: homecare
+description: "A new Flutter project."
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  google_maps_flutter:
+  geolocator:
+  permission_handler:
+  http:
+  get:
+  bottom_navy_bar:
+  shared_preferences:
+  flutter_spinkit:
+  auto_size_text:
+  table_calendar:
+  sliding_clipped_nav_bar:
+  animated_toggle_switch:
+  intl:
+  firebase_core:
+  firebase_messaging:
+  fluttertoast:
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^5.0.0
+
+  flutter_launcher_icons:
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/appIcon/icon.png"
+  min_sdk_android: 21
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/icons/
+    - assets/images/
+    - assets/images/nursing_services.png
+    - assets/services/
+    - assets/appIcon/
+
+  fonts:
+    - family: Tajawal
+      fonts:
+        - asset: assets/fonts/Tajawal.ttf

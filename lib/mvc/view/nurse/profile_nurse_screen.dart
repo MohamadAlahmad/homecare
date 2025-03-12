@@ -1,0 +1,113 @@
+//ignore_for_file: use_build_context_synchronously
+
+import 'dart:io';
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:homecare/core/theme/homecare_style.dart';
+import 'package:homecare/core/theme/themes.dart';
+import 'package:homecare/core/utils/globals.dart';
+import 'package:homecare/mvc/controller/connection_controller.dart';
+import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
+import 'package:homecare/widgets/login_item.dart';
+import 'package:homecare/widgets/profile_item.dart';
+
+class ProfileNurseScreen extends StatefulWidget {
+  const ProfileNurseScreen({super.key});
+
+  @override
+  State<ProfileNurseScreen> createState() => _ProfileNurseScreenState();
+}
+
+class _ProfileNurseScreenState extends State<ProfileNurseScreen> {
+  SharedPrefsController sharedPrefsController = SharedPrefsController();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(10.0, Platform.isIOS ? 10.0 : 20.0, 10.0, Platform.isIOS ? 5.0 : 10.0),
+                child: Text('البروفايل', style: TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold)),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 25.0),
+                      const CircleAvatar(radius: 75.0, backgroundColor: HomeCareTheme.secondaryColor),
+                      Padding(
+                        padding: EdgeInsets.all(10.0),
+                        child: Text('${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}', style: TextStyle(fontSize: 18.0)),
+                      ),
+                      Container(
+                        height: 330.0,
+                        padding: const EdgeInsets.all(10.0),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(20.0),
+                          color: HomeCareTheme.primaryColor.withValues(alpha: 0.05),
+                        ),
+                        child: ListView.separated(
+                          padding: EdgeInsets.zero,
+                          physics: NeverScrollableScrollPhysics(),
+                          itemCount: Globals.listOfNurseProfileItems.length + 1,
+                          itemBuilder: (context, i) {
+                            if(i == Globals.listOfNurseProfileItems.length) {
+                              return logoutItem(logoutMethod: logoutMethod);
+                            } else {
+                              return ProfileItem(
+                                context,
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => Globals.listOfNurseProfileItems[i].page));
+                                },
+                                title: Globals.listOfNurseProfileItems[i].title,
+                                iconUrl: Globals.listOfNurseProfileItems[i].iconUrl,
+                              );
+                            }
+                          },
+                          separatorBuilder: (context, i) => const Divider(indent: 10.0, endIndent: 10.0),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  logoutMethod() {
+    HomeCareStyle.showCustomDialog2(
+      context,
+      title: 'تسجيل الخروج',
+      buttonTitle: 'نعم',
+      content: 'هل تريد تسجيل الخروج فعلاً من حسابك في التطبيق ؟',
+      onYesPressed: () async {
+        var result = await ConnectionController.logout(token: sharedPrefsController.getToken());
+        if(result) {
+          sharedPrefsController.clearData();
+          GlobalPageController.registerController = PageController(initialPage: 0);
+          Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
+        } else {
+          Navigator.pop(context);
+          HomeCareStyle.showSnackBar(
+            context,
+            content: 'فشل تسجيل الخروج',
+            icon: CupertinoIcons.exclamationmark_circle_fill,
+          );
+        }
+      },
+      buttonColor: Colors.red,
+    );
+  }
+
+}
