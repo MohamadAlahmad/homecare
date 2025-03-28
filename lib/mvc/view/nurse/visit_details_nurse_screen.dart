@@ -18,6 +18,7 @@ import 'package:homecare/widgets/message_widget.dart';
 import 'package:homecare/widgets/nurse/fill_session_modal.dart';
 import 'package:homecare/widgets/re_login_widget.dart';
 import 'package:homecare/widgets/vital_sign_card.dart';
+import 'package:no_screenshot/no_screenshot.dart';
 
 class VisitDetailsNurseScreen extends StatefulWidget {
   final String serviceName;
@@ -64,7 +65,25 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
     pageController = PageController(initialPage: value);
     formattedDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     futurePreviousCase = getPreviousCase();
+    disableScreenshot();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    enableScreenshot();
+    super.dispose();
+  }
+
+  final _noScreenshot = NoScreenshot.instance;
+
+  void disableScreenshot() async {
+    bool result = await _noScreenshot.screenshotOff();
+    debugPrint('Screenshot Off: $result');
+  }
+  void enableScreenshot() async {
+    bool result = await _noScreenshot.screenshotOn();
+    debugPrint('Enable Screenshot: $result');
   }
 
   @override

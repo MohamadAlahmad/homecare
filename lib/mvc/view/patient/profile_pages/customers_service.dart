@@ -15,7 +15,7 @@ class _CustomersServiceState extends State<CustomersService> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: const EdgeInsets.only(left: 10.0, right: 10.0, top: 40.0),
+        padding: const EdgeInsets.only(top: 25.0),
         child: Stack(
           children: [
             HeaderWidget(context, title: 'خدمة العملاء'),

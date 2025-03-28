@@ -35,6 +35,7 @@ class HomeCareApi {
   static const String packages = '''/api/Packages/GetAllPackages''';
   static const String getSessionById = '''/api/Sessions/GetSessionById''';
   static const String deletePatientBySupporter = '''/api/Supporters/DeletePendingPatient''';
+  static const String deletePatient = '''/api/Patients/RemovePatientByNurseOrAnotherPatient''';
   static const String getLastSession = '''/api/Sessions/GetLastSessionByNurse''';
   static const String switchUser = '''/api/Auth/SwitchAccount''';
   static const String registerFCMToken = '''/api/Notifications/RegisterFcmToken''';

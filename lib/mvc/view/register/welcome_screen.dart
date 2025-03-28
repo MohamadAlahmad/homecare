@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/view/register/privacy_policy_screen.dart';
 import 'package:homecare/widgets/buttons.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> {
+  bool agree = false;
 
   @override
   Widget build(BuildContext context) {
@@ -21,22 +29,37 @@ class WelcomeScreen extends StatelessWidget {
               SizedBox(height: MediaQuery.of(context).size.height * 0.1),
               const Text('مرحباً بك في ALB', style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold), textDirection: TextDirection.rtl),
               SizedBox(height: MediaQuery.of(context).size.height * 0.1),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()));
-                },
-                child: const Text('سياسة الخصوصية والاستخدام', style: TextStyle(decoration: TextDecoration.underline, fontSize: 16.0, color: Colors.blue)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()));
+                    },
+                    child: const Text('سياسة الخصوصية والاستخدام', style: TextStyle(decoration: TextDecoration.underline, fontSize: 16.0, color: Colors.blue)),
+                  ),
+                  Text('الموافقة على ', style: TextStyle(fontSize: 16.0, color: Colors.black)),
+                  Checkbox(
+                    value: agree,
+                    activeColor: HomeCareTheme.primaryColor,
+                    onChanged: (bool? newValue) {
+                      setState(() {
+                        agree = !agree;
+                      });
+                    },
+                  ),
+                ],
               ),
-              const Spacer(),
+              const SizedBox(height: 25.0),
               RegisterButton(
                 context,
-                title: const Text('الموافقة وتسجيل الدخول', style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold)),
-                onPressed: () {
+                title: const Text('متابعة', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold)),
+                onPressed: agree ? () {
                   GlobalPageController.registerController.nextPage(
                     duration: const Duration(milliseconds: 800),
                     curve: Curves.easeInOut,
                   );
-                },
+                } : () {},
               ),
             ],
           ),

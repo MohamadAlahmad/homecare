@@ -43,19 +43,18 @@ class HttpHelper {
       debugPrint('\x1B[33m<<<<<<<<<< RESPONSE BODY >>>>>>>>> : \x1B[34m$responseBody\x1B[0m');
       prefsController.saveMSG(message: 'حدث خطأ أثناء الاتصال .. الرجاء المحاولة لاحقاً');
       return Future.value(false as T);
-      //throw Exception('Unexpected status code: $statusCode');
     }
   }
 
-/*
-Red   	\x1B[31m
-Green	  \x1B[32m
-Yellow	\x1B[33m
-Blue	  \x1B[34m
-Magenta	\x1B[35m
-Cyan	  \x1B[36m
-White  	\x1B[37m
-*/
+  /*
+  Red    \x1B[31m
+  Green  \x1B[32m
+  Yellow \x1B[33m
+  Blue   \x1B[34m
+  Magenta \x1B[35m
+  Cyan   \x1B[36m
+  White  \x1B[37m
+  */
 
   static Future<Map<String, dynamic>> httpRequest({
     required Uri url,
@@ -66,6 +65,8 @@ White  	\x1B[37m
     try {
       final response = await (method == 'POST'
           ? http.post(url, headers: headers, body: body)
+          : method == 'DELETE'
+          ? http.delete(url, headers: headers)
           : http.get(url, headers: headers)).timeout(const Duration(seconds: timeout));
 
       // Print the status code

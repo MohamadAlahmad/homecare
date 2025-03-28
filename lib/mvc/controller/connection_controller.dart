@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:homecare/core/utils/api.dart';
@@ -20,7 +19,6 @@ import 'package:homecare/mvc/model/api/patient.dart';
 import 'package:homecare/mvc/model/api/previous_case.dart';
 import 'package:homecare/mvc/model/api/region.dart';
 import 'package:homecare/mvc/model/api/reservation.dart';
-import 'package:http/http.dart' as http;
 
 class ConnectionController {
 
@@ -776,7 +774,6 @@ class ConnectionController {
       responseBody: response['body'],
     );
   }
-
 
   static Future<bool> acceptCase({required String token, required int caseId}) async {
     Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.acceptCase}')
@@ -1543,6 +1540,31 @@ class ConnectionController {
         return [];
       },
       onGone: () => [],
+      responseBody: response['body'],
+    );
+  }
+
+  static Future<bool> deletePatient({required String token, required int id}) async {
+    Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.deletePatient}')
+        .replace(queryParameters: {'patientId': id.toString()});
+
+    var response = await HttpHelper.httpRequest(
+      url: url,
+      method: 'DELETE',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    return await HttpHelper.handleResponse(
+      statusCode: response['statusCode'],
+      onSuccess: () {
+        debugPrint('Deleted Successfully !!');
+        return true;
+      },
+      onUnauthorizedAdditional: () => false,
+      onGone: null,
       responseBody: response['body'],
     );
   }

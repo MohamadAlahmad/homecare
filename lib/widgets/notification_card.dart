@@ -22,7 +22,13 @@ Widget NotificationCard(BuildContext context, {required String title, required S
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(backgroundImage: AssetImage('assets/appIcon/icon.png')),
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [BoxShadow(color: HomeCareTheme.secondaryColor, blurRadius: 5.0)],
+                  ),
+                  child: CircleAvatar(backgroundImage: AssetImage('assets/appIcon/icon.png')),
+                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(left: 15.0, right: 10.0, bottom: 3.0),

@@ -9,6 +9,7 @@ import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/case.dart';
+import 'package:homecare/mvc/view/patient/profile_pages/health_record_details.dart';
 import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
 import 'package:homecare/widgets/message_widget.dart';
 import 'package:homecare/widgets/nurse/finished_screen_card.dart';
@@ -470,7 +471,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
             address: '${caseItem.geocodedAddress!.governorateDto.name} ${caseItem.geocodedAddress!.regionDto.name} ${caseItem.geocodedAddress!.details}',
             isSpecial: caseItem.specialized,
             onPressed: () {
-              debugPrint(caseItem.id.toString());
+              Navigator.push(context, MaterialPageRoute(builder: (context) => HealthRecordDetailsScreen(sessionId: caseItem.id)));
             },
           );
         },

@@ -470,24 +470,6 @@ class _BookingScreenState extends State<BookingScreen> {
         content: 'هناك حقول في الصفحة مطلوبة',
         icon: CupertinoIcons.info,
       );
-      /*Get.snackbar(
-        '',
-        '',
-        margin: const EdgeInsets.only(top: 30.0),
-        snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: HomeCareTheme.primaryColorLight.withValues(alpha: 0.8),
-        duration: const Duration(milliseconds: 1500),
-        titleText: Text(
-          'تنبيه',
-          style: TextStyle(color: Colors.white, fontSize: 14.0),
-          textAlign: TextAlign.center,
-        ),
-        messageText: Text(
-          'هناك حقول في الصفحة مطلوبة',
-          style: TextStyle(color: Colors.white, fontSize: 14.0),
-          textAlign: TextAlign.center,
-        ),
-      );*/
       return;
     }
     // Stop navigation if there are errors

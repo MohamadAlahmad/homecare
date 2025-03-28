@@ -30,6 +30,7 @@ Widget PatientBriefCard(BuildContext context, {required String name, required St
                     color: HomeCareTheme.secondaryColor,
                     borderRadius: BorderRadius.circular(50.0),
                   ),
+                  child: Image.asset('assets/images/person1_temp.png'),
                 ),
                 Expanded(
                   child: Padding(

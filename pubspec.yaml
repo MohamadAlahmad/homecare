@@ -29,6 +29,8 @@ dependencies:
   firebase_core:
   firebase_messaging:
   fluttertoast:
+  flutter_local_notifications:
+  no_screenshot:
 
 dev_dependencies:
   flutter_test:

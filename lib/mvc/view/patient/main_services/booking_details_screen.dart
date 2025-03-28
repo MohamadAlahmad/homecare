@@ -63,6 +63,10 @@ class _BookingDetailsScreenState extends State<BookingDetailsScreen> {
                 textDirection: TextDirection.rtl,
                 child: Column(
                   children: [
+                    ElevatedButton(
+                      onPressed: () {},
+                      child: Text('data'),
+                    ),
                     Container(
                       padding: EdgeInsets.all(15.0),
                       height: HomeCareSize.height(context) * 0.18,
