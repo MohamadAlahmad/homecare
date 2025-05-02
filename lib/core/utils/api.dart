@@ -31,6 +31,7 @@ class HomeCareApi {
   static const String cancelCaseByPatient = '''/api/Sessions/CancelReservationByPatient''';
   static const String ownReservations = '''/api/Sessions/GetOwnReservations''';
   static const String fillSessionForm = '''/api/Sessions/FillSessionForm''';
+  static const String fillLabSessionForm = '''/api/Sessions/FillLabSessionForm''';
   static const String ownHealthRecords = '''/api/Sessions/GetOwnHealthRecords''';
   static const String packages = '''/api/Packages/GetAllPackages''';
   static const String getSessionById = '''/api/Sessions/GetSessionById''';
@@ -41,4 +42,8 @@ class HomeCareApi {
   static const String registerFCMToken = '''/api/Notifications/RegisterFcmToken''';
   static const String logout = '''/api/Auth/LogOut''';
   static const String getNotifications = '''/api/Notifications/GetMyNotifications''';
+  static const String uploadFile = '''/api/FileManager/UploadFile''';
+  static const String deleteFile = '''/api/FileManager/Delete''';
+  static const String getLabTests = '''/api/LabTests/GetAllLabTests''';
+  static const String getLabs = '''/api/Labs/GetAllLabs''';
 }

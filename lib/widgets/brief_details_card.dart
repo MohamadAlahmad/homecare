@@ -6,9 +6,10 @@ Widget BriefDetailsCard({
   String? serviceName,
   required String patientName,
   required String nurseName,
-  required String date,
+  required DateTime date,
   required String location,
 }) {
+  String formattedDate = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
   return Container(
     padding: EdgeInsets.all(10.0),
     decoration: BoxDecoration(
@@ -76,7 +77,7 @@ Widget BriefDetailsCard({
             ),
             Padding(
               padding: const EdgeInsets.only(top: 5.0),
-              child: Text(date, style: TextStyle(fontSize: 14.0, color: Colors.black)),
+              child: Text(formattedDate, style: TextStyle(fontSize: 14.0, color: Colors.black)),
             ),
           ],
         ),

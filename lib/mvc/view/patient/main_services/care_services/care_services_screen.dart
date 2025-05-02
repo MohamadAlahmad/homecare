@@ -34,8 +34,11 @@ class _CareServicesScreenState extends State<CareServicesScreen> {
 
   Future<List<MedicalService>> getServices() async {
     String token = sharedPrefsController.getToken();
-    return await ConnectionController.getServices(token: token, medicalServiceTypeId: 2);
+    var response = await ConnectionController.getServices(token: token, medicalServiceTypeId: 2);
+    debugPrint('Fetched Services: $response'); // Print the fetched services
+    return response;
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -72,15 +75,17 @@ class _CareServicesScreenState extends State<CareServicesScreen> {
                   child: FutureBuilder(
                     future: futureServices,
                     builder: (context, snapshot) {
-                      if(snapshot.connectionState == ConnectionState.waiting) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
                         return HCCPI(color: HomeCareTheme.primaryColor);
-                      } else if(sharedPrefsController.sessionTerminated()) {
+                      } else if (sharedPrefsController.sessionTerminated()) {
                         sharedPrefsController.terminateSession(true);
                         return ReLoginWidget(context);
-                      } else if(snapshot.hasError) {
-                        return Center(child: Text('Error'));
+                      } else if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}')); // Display the error message
+                      } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                        return MessageWidget(text: 'لا توجد خدمات');
                       } else {
-                        return buildUI(services: snapshot.data ?? []);
+                        return buildUI(services: snapshot.data!);
                       }
                     },
                   ),
@@ -99,16 +104,18 @@ class _CareServicesScreenState extends State<CareServicesScreen> {
   }
 
   buildUI({required List<MedicalService> services}) {
-    return services.isEmpty ? MessageWidget(text: 'لا توجد خدمات') : ListView.builder(
+    return services.isEmpty
+        ? MessageWidget(text: 'لا توجد خدمات')
+        : ListView.builder(
       physics: const BouncingScrollPhysics(),
       padding: EdgeInsets.zero,
       itemCount: services.length,
       itemBuilder: (context, i) {
         return ServiceCard(
-          context,
+          //context,
           title: services[i].name,
           description: services[i].description,
-          imagePath: services[i].image,
+          imageUrl: services[i].imageUrl, // Pass the imageUrl
           price: services[i].price,
           onClick: () {
             debugPrint(services[i].id.toString());
@@ -121,17 +128,19 @@ class _CareServicesScreenState extends State<CareServicesScreen> {
                   description: services[i].description,
                   preConditions: services[i].serviceConditions,
                   price: services[i].price,
-                  imagePath: services[i].image,
+                  imagePath: services[i].imageUrl,
                   category: 'خدمات الرعاية',
                   isNutrition: false,
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => BookingScreen(
-                        serviceId: services[i].id,
-                        price: services[i].price,
-                        isNursingService: false,
-                      )),
+                      MaterialPageRoute(
+                        builder: (context) => BookingScreen(
+                          serviceId: services[i].id,
+                          price: services[i].price,
+                          isNursingService: false,
+                        ),
+                      ),
                     );
                   },
                 );

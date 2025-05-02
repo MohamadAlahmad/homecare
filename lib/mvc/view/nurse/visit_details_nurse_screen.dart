@@ -1,21 +1,29 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously
 
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
+import 'package:homecare/mvc/model/api/lab_model.dart';
+import 'package:homecare/mvc/model/api/lab_test_model.dart';
 import 'package:homecare/mvc/model/api/previous_case.dart';
 import 'package:homecare/widgets/brief_details_card.dart';
 import 'package:homecare/widgets/buttons.dart';
 import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
+import 'package:homecare/widgets/custom_item_card.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/menu_text.dart';
 import 'package:homecare/widgets/message_widget.dart';
 import 'package:homecare/widgets/nurse/fill_session_modal.dart';
+import 'package:homecare/widgets/nurse/upload_button.dart';
 import 'package:homecare/widgets/re_login_widget.dart';
 import 'package:homecare/widgets/vital_sign_card.dart';
 import 'package:no_screenshot/no_screenshot.dart';
@@ -27,14 +35,28 @@ class VisitDetailsNurseScreen extends StatefulWidget {
   final num servicePrice;
   final String location;
   final int sessionId;
-  const VisitDetailsNurseScreen({super.key, required this.serviceName, required this.patientName, required this.location, required this.sessionId, required this.patientId, required this.servicePrice});
+  final bool forLabService;
+  final List<LabTestModel> labTests;
+  final LabModel? lab;
+
+  const VisitDetailsNurseScreen({
+    super.key,
+    required this.serviceName,
+    required this.patientName,
+    required this.location,
+    required this.sessionId,
+    required this.patientId,
+    required this.servicePrice,
+    required this.forLabService,
+    required this.labTests,
+    required this.lab,
+  });
 
   @override
   State<VisitDetailsNurseScreen> createState() => _VisitDetailsNurseScreenState();
 }
 
 class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
-
   int value = 0;
   late PageController pageController;
   SharedPrefsController sharedPrefsController = SharedPrefsController();
@@ -47,11 +69,9 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
   TextEditingController caseDescription = TextEditingController();
   TextEditingController additionalServiceNameController = TextEditingController();
   TextEditingController additionalServicePriceController = TextEditingController();
+  ScrollController scrollController = ScrollController();
 
   late Future<PreviousCase?> futurePreviousCase;
-
-  DateTime now = DateTime.now();
-  late String formattedDate;
 
   Future<PreviousCase?> getPreviousCase() async {
     return await ConnectionController.getPreviousCase(
@@ -63,10 +83,16 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
   @override
   void initState() {
     pageController = PageController(initialPage: value);
-    formattedDate = "${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}";
     futurePreviousCase = getPreviousCase();
     disableScreenshot();
+    calculateFinalLabPrice();
     super.initState();
+  }
+
+  calculateFinalLabPrice() {
+    for(int i = 0; i < widget.labTests.length; i++) {
+        finalLabPrice += widget.labTests[i].price;
+    }
   }
 
   @override
@@ -81,6 +107,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
     bool result = await _noScreenshot.screenshotOff();
     debugPrint('Screenshot Off: $result');
   }
+
   void enableScreenshot() async {
     bool result = await _noScreenshot.screenshotOn();
     debugPrint('Enable Screenshot: $result');
@@ -89,7 +116,6 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //backgroundColor: Colors.white.withValues(alpha: 0.98),
       body: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus();
@@ -101,7 +127,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
               AnimatedToggleSwitch<int>.size(
                 textDirection: TextDirection.rtl,
                 current: value,
-                values: const [0, 1], // For two pages
+                values: widget.forLabService ? const [0] : const [0, 1],
                 iconOpacity: 1.0,
                 indicatorSize: const Size.fromWidth(150),
                 iconBuilder: (i) => Padding(
@@ -141,8 +167,8 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                       setState(() => value = index);
                     },
                     children: [
-                      CurrentVisit(),
-                      PreviousVisit(),
+                      widget.forLabService ? CurrentLabVisit() : CurrentVisit(),
+                      if (!widget.forLabService) PreviousVisit(),
                     ],
                   ),
                 ),
@@ -154,8 +180,67 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
     );
   }
 
+  String selectedFilePath = '';
+  String fileName = '';
+  int fileId = -1;
+  bool fileLoadingState = false;
+
+  Future<void> pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      setState(() {
+        selectedFilePath = result.files.single.path!;
+        fileName = result.files.single.name;
+        fileLoadingState = true;
+      });
+      await uploadAttachment();
+      setState(() {
+        fileLoadingState = false;
+      });
+    }
+  }
+
+  Future<void> uploadAttachment() async {
+    String? filePath = selectedFilePath;
+
+    int result = await ConnectionController.uploadFile(
+      folderName: 2,
+      token: sharedPrefsController.getToken(),
+      filePath: filePath,
+    );
+
+    if (result != -1) {
+      Fluttertoast.showToast(
+        msg: "تم تحميل الملف",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+
+      setState(() {
+        fileId = result;
+      });
+      debugPrint('File ID : $result');
+    } else {
+      Fluttertoast.showToast(
+        msg: "فشل تحميل الملف",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  }
+
   final formKey = GlobalKey<FormState>();
   bool isLoading = false;
+
   CurrentVisit() {
     return Padding(
       padding: const EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0),
@@ -170,7 +255,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                 serviceName: widget.serviceName,
                 patientName: widget.patientName,
                 nurseName: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
-                date: formattedDate,
+                date: DateTime.now(),
                 location: widget.location,
               ),
               Padding(
@@ -188,7 +273,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                   if (value == null || value.isEmpty) {
                     return 'حقل مطلوب';
                   }
-                  return null; // No errors
+                  return null;
                 },
               ),
               VitalSignCard(
@@ -200,7 +285,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                   if (value == null || value.isEmpty) {
                     return 'حقل مطلوب';
                   }
-                  return null; // No errors
+                  return null;
                 },
               ),
               VitalSignCard(
@@ -212,7 +297,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                   if (value == null || value.isEmpty) {
                     return 'حقل مطلوب';
                   }
-                  return null; // No errors
+                  return null;
                 },
               ),
               VitalSignCard(
@@ -224,7 +309,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                   if (value == null || value.isEmpty) {
                     return 'حقل مطلوب';
                   }
-                  return null; // No errors
+                  return null;
                 },
               ),
               Padding(
@@ -244,24 +329,30 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                     if (value == null || value.isEmpty) {
                       return 'حقل مطلوب';
                     }
-                    return null; // No errors
+                    return null;
                   },
                 ),
               ),
-              /*Padding(
+              Padding(
                 padding: EdgeInsets.only(top: 20.0, bottom: 10.0),
-                child: MenuText('صور إضافية : لا يوجد حالياً'),
-              ),*/
-              /*Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Text('هنا'),
-              ),*/
+                child: MenuText('ملفات إضافية :'),
+              ),
+              UploadButton(
+                onPressed: pickFile,
+                filePath: selectedFilePath,
+                fileName: fileName,
+                loading: fileLoadingState,
+                forFillSession: true,
+              ),
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: CustomButton(
                   width: HomeCareSize.width(context),
                   height: 50.0,
-                  onPressed: () {
+                  onPressed: fileLoadingState ? () {} : () {
+                    /*if(fileName.isEmpty) {
+                      HomeCareStyle.showSnackBar(context, content: 'الملف مطلوب', icon: CupertinoIcons.exclamationmark_circle);
+                    } else {*/
                     if(formKey.currentState!.validate()) {
                       showModalBottomSheet(
                         isScrollControlled: true,
@@ -270,7 +361,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                         builder: (context) {
                           return Padding(
                             padding: EdgeInsets.only(
-                              bottom: MediaQuery.of(context).viewInsets.bottom, // Adjust for keyboard
+                              bottom: MediaQuery.of(context).viewInsets.bottom,
                             ),
                             child: SingleChildScrollView(
                               child: FillSessionModal(
@@ -279,7 +370,6 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                                 additionalServiceNameCtrl: additionalServiceNameController,
                                 additionalServicePriceCtrl: additionalServicePriceController,
                                 onPressed: () async {
-                                  // Show the loading dialog
                                   showDialog(
                                     context: context,
                                     barrierDismissible: false,
@@ -290,31 +380,31 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                                       );
                                     },
                                   );
-                                  // Try sending the request and handle any response
                                   try {
-                                  var result = await ConnectionController.fillSessionForm(
-                                    bioMarker1Value: bloodPressureFirstCtrl.text,
-                                    bioMarker2Value: bloodPressureSecondCtrl.text,
-                                    bioMarker3Value: bloodSugarCtrl.text,
-                                    bioMarker4Value: heartRateCtrl.text,
-                                    bioMarker5Value: oxygenationCtrl.text,
-                                    notes: caseDescription.text.isNotEmpty ? caseDescription.text : '',
-                                    basicServicePrice: widget.servicePrice,
-                                    descriptionAdditional: additionalServiceNameController.text.isNotEmpty ? additionalServiceNameController.text : '',
-                                    priceAdditional: additionalServicePriceController.text.isNotEmpty
-                                        ? num.tryParse(additionalServicePriceController.text) ?? 0
-                                        : 0,
-                                    token: sharedPrefsController.getToken(),
-                                    sessionId: widget.sessionId,
-                                  );
+                                    var result = await ConnectionController.fillSessionForm(
+                                      bioMarker1Value: bloodPressureFirstCtrl.text,
+                                      bioMarker2Value: bloodPressureSecondCtrl.text,
+                                      bioMarker3Value: bloodSugarCtrl.text,
+                                      bioMarker4Value: heartRateCtrl.text,
+                                      bioMarker5Value: oxygenationCtrl.text,
+                                      notes: caseDescription.text.isNotEmpty ? caseDescription.text : '',
+                                      basicServicePrice: widget.servicePrice,
+                                      descriptionAdditional: additionalServiceNameController.text.isNotEmpty ? additionalServiceNameController.text : '',
+                                      priceAdditional: additionalServicePriceController.text.isNotEmpty
+                                          ? num.tryParse(additionalServicePriceController.text) ?? 0
+                                          : 0,
+                                      token: sharedPrefsController.getToken(),
+                                      sessionId: widget.sessionId,
+                                      attachmentIds: [fileId],
+                                    );
 
-                                  Navigator.pop(context);
-                                  Navigator.pop(context);
-                                  Navigator.pop(context);
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
 
-                                  if(sharedPrefsController.sessionTerminated()) {
-                                    HomeCareStyle.showReLoginDialog(context);
-                                  } else if (result) {
+                                    if (sharedPrefsController.sessionTerminated()) {
+                                      HomeCareStyle.showReLoginDialog(context);
+                                    } else if (result) {
                                       HomeCareStyle.showSnackBar(
                                         context,
                                         success: true,
@@ -329,11 +419,165 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                                       );
                                     }
                                   } catch (e) {
-                                    // Ensure the dialog is dismissed on error
                                     Navigator.pop(context);
-                                    // Log or handle the error
                                     debugPrint('Error occurred: $e');
-                                    // Show an error snackbar
+                                    HomeCareStyle.showSnackBar(
+                                      context,
+                                      content: 'حدث خطأ أثناء إرسال البيانات. يرجى المحاولة مرة أخرى.',
+                                      icon: Icons.error_outline,
+                                    );
+                                  }
+                                },
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    }
+                    //}
+                  },
+                  title: const Text('استمرار', style: TextStyle(fontSize: 16.0, color: Colors.white)),
+                  backgroundColor: HomeCareTheme.primaryColorBold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  num finalLabPrice = 0;
+  CurrentLabVisit() {
+    return Padding(
+      padding: const EdgeInsets.only(top: 10.0, left: 10.0, right: 10.0),
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              BriefDetailsCard(
+                serviceName: widget.serviceName,
+                patientName: widget.patientName,
+                nurseName: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
+                date: DateTime.now(),
+                location: widget.location,
+              ),
+              SizedBox(height: 25.0),
+              MenuText('التحاليل المخبرية:'),
+              SizedBox(
+                height: 180.0,
+                child: Scrollbar(
+                  thumbVisibility: true,
+
+                  controller: scrollController,
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: EdgeInsets.all(10.0),
+                    scrollDirection: Axis.horizontal,
+                    controller: scrollController,
+                    children: [
+                      for (var labTest in widget.labTests)
+                        CustomItemCard(
+                          id: labTest.id,
+                          title: labTest.name,
+                          value: labTest.price,
+                          isSelected: false,
+                          forLabTest: true,
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 25.0),
+              if(widget.lab != null) Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  MenuText('المخبر الذي تم اختياره:'),
+                  const Spacer(),
+                  SizedBox(
+                    height: 165.0,
+                    child: CustomItemCard(
+                      id: widget.lab!.id,
+                      title: widget.lab!.name,
+                      value: widget.lab!.rate!,
+                      isSelected: false,
+                      forLabTest: false,
+                    ),
+                  ),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: CustomButton(
+                  width: HomeCareSize.width(context),
+                  height: 50.0,
+                  onPressed: () {
+                    if (formKey.currentState!.validate()) {
+                      showModalBottomSheet(
+                        isScrollControlled: true,
+                        context: context,
+                        showDragHandle: true,
+                        builder: (context) {
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              bottom: MediaQuery.of(context).viewInsets.bottom,
+                            ),
+                            child: SingleChildScrollView(
+                              child: FillSessionModal(
+                                title: 'تفاصيل الفاتورة',
+                                price: widget.servicePrice + finalLabPrice,
+                                additionalServiceNameCtrl: additionalServiceNameController,
+                                additionalServicePriceCtrl: additionalServicePriceController,
+                                onPressed: () async {
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) {
+                                      return AlertDialog(
+                                        backgroundColor: Colors.transparent,
+                                        title: HCCPI(color: Colors.white, size: 30.0),
+                                      );
+                                    },
+                                  );
+                                  try {
+                                    var result = await ConnectionController.fillLabSessionForm(
+                                      notes: caseDescription.text.isNotEmpty ? caseDescription.text : '',
+                                      basicServicePrice: widget.servicePrice,
+                                      descriptionAdditional: additionalServiceNameController.text.isNotEmpty ? additionalServiceNameController.text : '',
+                                      priceAdditional: additionalServicePriceController.text.isNotEmpty
+                                          ? num.tryParse(additionalServicePriceController.text) ?? 0
+                                          : 0,
+                                      token: sharedPrefsController.getToken(),
+                                      sessionId: widget.sessionId,
+                                      attachmentIds: [fileId],
+                                    );
+
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
+                                    Navigator.pop(context);
+
+                                    if (sharedPrefsController.sessionTerminated()) {
+                                      HomeCareStyle.showReLoginDialog(context);
+                                    } else if (result) {
+                                      HomeCareStyle.showSnackBar(
+                                        context,
+                                        success: true,
+                                        content: 'تم تسجيل الانتهاء بنجاح',
+                                        icon: Icons.check_circle,
+                                      );
+                                    } else {
+                                      HomeCareStyle.showSnackBar(
+                                        context,
+                                        content: sharedPrefsController.getMSG(),
+                                        icon: Icons.info_outline,
+                                      );
+                                    }
+                                  } catch (e) {
+                                    Navigator.pop(context);
+                                    debugPrint('Error occurred: $e');
                                     HomeCareStyle.showSnackBar(
                                       context,
                                       content: 'حدث خطأ أثناء إرسال البيانات. يرجى المحاولة مرة أخرى.',
@@ -365,100 +609,92 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
       child: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: FutureBuilder<PreviousCase?>(
-            future: futurePreviousCase,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: HCCPI(color: HomeCareTheme.primaryColor));
-              } else if(sharedPrefsController.sessionTerminated()) {
-                return ReLoginWidget(context);
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              } else if (!snapshot.hasData) {
-                return MessageWidget(text: 'لا توجد زيارة سابقة');
-              } else {
-                var previousCase = snapshot.data!;
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    BriefDetailsCard(
-                      serviceName: widget.patientName,
-                      patientName: widget.patientName,
-                      nurseName: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
-                      date: formattedDate,
-                      location: widget.location,
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: 15.0),
-                      child: MenuText('المعالم الحيوية :'),
-                    ),
-                    VitalSignCard(
+          future: futurePreviousCase,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: HCCPI(color: HomeCareTheme.primaryColor));
+            } else if (sharedPrefsController.sessionTerminated()) {
+              return ReLoginWidget(context);
+            } else if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            } else if (!snapshot.hasData) {
+              return MessageWidget(text: 'لا توجد زيارة سابقة');
+            } else {
+              var previousCase = snapshot.data!;
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  BriefDetailsCard(
+                    serviceName: widget.patientName,
+                    patientName: widget.patientName,
+                    nurseName: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
+                    date: snapshot.data!.visitDate,
+                    location: widget.location,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 15.0),
+                    child: MenuText('المعالم الحيوية :'),
+                  ),
+                  VitalSignCard(
+                    context,
+                    title: 'الضغط',
+                    controller: TextEditingController(text: previousCase.bloodPressureFirstValue),
+                    controller2: TextEditingController(text: previousCase.bloodPressureSecondValue),
+                    forBloodPressure: true,
+                    enabled: false,
+                  ),
+                  VitalSignCard(
+                    context,
+                    title: 'السكر',
+                    controller: TextEditingController(text: previousCase.bloodSugar),
+                    enabled: false,
+                  ),
+                  VitalSignCard(
+                    context,
+                    title: 'نبضات القلب',
+                    controller: TextEditingController(text: previousCase.heartRate),
+                    enabled: false,
+                  ),
+                  VitalSignCard(
+                    context,
+                    title: 'الأكسجة',
+                    controller: TextEditingController(text: previousCase.oxygenation),
+                    enabled: false,
+                  ),
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10.0),
+                    child: MenuText('وصف الحالة :'),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                    child: CustomTextField(
                       context,
-                      title: 'الضغط',
-                      controller: TextEditingController(text: previousCase.bloodPressureFirstValue),
-                      controller2: TextEditingController(text: previousCase.bloodPressureSecondValue),
-                      forBloodPressure: true,
+                      controller: TextEditingController(text: previousCase.notes),
+                      fontSize: 14.0,
+                      maxLines: 5,
+                      fillColor: HomeCareTheme.primaryColor.withValues(alpha: 0.05),
                       enabled: false,
                     ),
-                    VitalSignCard(
-                      context,
-                      title: 'السكر',
-                      controller: TextEditingController(text: previousCase.bloodSugar),
-                      enabled: false,
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: CustomButton(
+                      width: HomeCareSize.width(context),
+                      height: 50.0,
+                      onPressed: () {
+                        pageController.previousPage(
+                          duration: const Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                        );
+                      },
+                      title: const Text('رجوع', style: TextStyle(fontSize: 16.0, color: Colors.white)),
+                      backgroundColor: HomeCareTheme.primaryColorBold,
                     ),
-                    VitalSignCard(
-                      context,
-                      title: 'نبضات القلب',
-                      controller: TextEditingController(text: previousCase.heartRate),
-                      enabled: false,
-                    ),
-                    VitalSignCard(
-                      context,
-                      title: 'الأكسجة',
-                      controller: TextEditingController(text: previousCase.oxygenation),
-                      enabled: false,
-                    ),
-                    Padding(
-                      padding: EdgeInsets.symmetric(vertical: 10.0),
-                      child: MenuText('وصف الحالة :'),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                      child: CustomTextField(
-                        context,
-                        controller: TextEditingController(text: previousCase.notes),
-                        fontSize: 14.0,
-                        maxLines: 5,
-                        fillColor: HomeCareTheme.primaryColor.withValues(alpha: 0.05),
-                        enabled: false,
-                      ),
-                    ),
-                    /*Padding(
-                      padding: EdgeInsets.only(top: 20.0, bottom: 10.0),
-                      child: MenuText('صور إضافية : لا يوجد حالياً'),
-                    ),*/
-                    /*Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Text('هنا'),
-                    ),*/
-                    Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: CustomButton(
-                        width: HomeCareSize.width(context),
-                        height: 50.0,
-                        onPressed: () {
-                          pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        title: const Text('رجوع', style: TextStyle(fontSize: 16.0, color: Colors.white)),
-                        backgroundColor: HomeCareTheme.primaryColorBold,
-                      ),
-                    ),
-                  ],
-                );
-              }
-            },
+                  ),
+                ],
+              );
+            }
+          },
         ),
       ),
     );
@@ -469,31 +705,31 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
     1 => HomeCareTheme.primaryColor,
     _ => HomeCareTheme.primaryColor,
   };
+
   Widget textBuilder2(int toggleValue, int currentValue) {
-    // Determine if the current toggleValue is selected.
     final isSelected = toggleValue == currentValue;
     return Container(
       height: 30.0,
       width: 100.0,
       decoration: BoxDecoration(
-        // Use a constant border color based on toggleValue.
         border: Border.all(
           color: isSelected ? Colors.transparent : colorBuilder2(toggleValue),
         ),
         borderRadius: BorderRadius.circular(8.0),
-        color: isSelected ? colorBuilder2(toggleValue) : Colors.transparent, // Fill with color if selected.
+        color: isSelected ? colorBuilder2(toggleValue) : Colors.transparent,
       ),
       child: Center(
         child: Text(
           textByValue2(toggleValue),
           style: TextStyle(
             fontSize: 14.0,
-            color: isSelected ? Colors.white : Colors.black, // White for selected, black for unselected.
+            color: isSelected ? Colors.white : Colors.black,
           ),
         ),
       ),
     );
   }
+
   String textByValue2(int? value) => switch (value) {
     0 => 'الزيارة الحالية',
     1 => 'الزيارة السابقة',

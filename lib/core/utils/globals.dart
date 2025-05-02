@@ -8,12 +8,14 @@ import 'package:homecare/mvc/view/nurse/account_management_pages/account_details
 import 'package:homecare/mvc/view/nurse/account_management_pages/activity_log_screen.dart';
 import 'package:homecare/mvc/view/nurse/account_management_pages/my_points_screen.dart';
 import 'package:homecare/mvc/view/patient/main_services/care_services/care_services_screen.dart';
+import 'package:homecare/mvc/view/patient/main_services/labs_services/labs_services_screen.dart';
 import 'package:homecare/mvc/view/patient/main_services/nursing_services/nursing_services_screen.dart';
 import 'package:homecare/mvc/view/patient/main_services/nutrition_articles_screen/nutrition_articles_screen.dart';
 import 'package:homecare/mvc/view/patient/profile_pages/customers_service.dart';
 import 'package:homecare/mvc/view/patient/profile_pages/health_record_patient_screen.dart';
 import 'package:homecare/mvc/view/patient/profile_pages/my_profile_screen.dart';
 import 'package:homecare/mvc/view/common/patients_management_screen.dart';
+import 'package:homecare/mvc/view/register/privacy_policy_screen.dart';
 
 class GlobalPageController {
   static PageController registerController = PageController(initialPage: SharedPrefsController().reachToInfoPage() ? 3 :SharedPrefsController().amIWaitingSecondCode() ? 4 : 0);
@@ -21,7 +23,7 @@ class GlobalPageController {
 
 class GlobalCountries {
   static List<Country> countriesPhone = [
-    Country(name: 'سوريا', flag: Image.asset('assets/images/sy.png', scale: 2.5), dialCode: '+963', code: 'sy', maxNumber: 9),
+    //Country(name: 'سوريا', flag: Image.asset('assets/images/sy.png', scale: 2.5), dialCode: '+963', code: 'sy', maxNumber: 9),
     //Country(name: 'UAE', flag: Image.asset('assets/images/uae.png', scale: 2.5), dialCode: '971', code: 'ue', maxNumber: 9),
   ];
 }
@@ -55,6 +57,13 @@ class Globals {
       page: const NutritionArticlesScreen(),
     ),
     MainService(
+      id: 6,
+      name: 'خدمات المخبر',
+      isActive: true,
+      image: 'assets/services/6_6.png',
+      page: const LabsServicesScreen(),
+    ),
+    MainService(
       id: 3,
       name: 'علاج فيزيائي',
       isActive: false,
@@ -66,13 +75,6 @@ class Globals {
       name: 'زيارة طبيب',
       isActive: false,
       image: 'assets/services/5_5.png',
-      page: const Center(),
-    ),
-    MainService(
-      id: 6,
-      name: 'خدمات المخبر',
-      isActive: false,
-      image: 'assets/services/6_6.png',
       page: const Center(),
     ),
   ];
@@ -145,7 +147,10 @@ class Globals {
     ProfileItem(
       title: 'تعديل المعلومات الشخصية',
       iconUrl: 'assets/icons/user.png',
-      page: const MyProfileScreen(youDidNotEnterYourInfo: false),
+      page: const MyProfileScreen(
+        youDidNotEnterYourInfo: false,
+        forBookingThroughPackage: false,
+      ),
     ),
     /*ProfileItem(
       title: 'الموقع',
@@ -166,6 +171,11 @@ class Globals {
       title: 'خدمة العملاء',
       iconUrl: 'assets/icons/support.png',
       page: CustomersService(),
+    ),
+    ProfileItem(
+      title: 'سياسة الخصوصية والاستخدام',
+      iconUrl: 'assets/icons/insurance.png',
+      page: PrivacyPolicyScreen(),
     ),
   ];
 
@@ -197,6 +207,11 @@ class Globals {
       title: 'إدارة المرضى',
       iconUrl: 'assets/icons/category.png',
       page: PatientsManagementScreen(),
+    ),
+    ProfileItem(
+      title: 'سياسة الخصوصية والاستخدام',
+      iconUrl: 'assets/icons/insurance.png',
+      page: PrivacyPolicyScreen(),
     ),
   ];
 

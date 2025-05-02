@@ -4,7 +4,7 @@ class MedicalService {
   String description;
   String serviceConditions;
   bool isActive;
-  String image;
+  String imageUrl; // Change this to imageUrl
   num price;
 
   MedicalService({
@@ -13,21 +13,22 @@ class MedicalService {
     required this.description,
     required this.serviceConditions,
     required this.isActive,
-    required this.image,
+    required this.imageUrl, // Change this to imageUrl
     required this.price,
   });
 
-factory MedicalService.fromJson(Map<String, dynamic> json) {
+  factory MedicalService.fromJson(Map<String, dynamic> json) {
     return MedicalService(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       serviceConditions: json['serviceConditions'] ?? '',
       isActive: json['isActive'] ?? false,
-      image: json['image'] ?? '',
+      imageUrl: json['image']?['url'] ?? '', // Parse the nested 'url' field
       price: json['price'] ?? 0,
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -35,7 +36,7 @@ factory MedicalService.fromJson(Map<String, dynamic> json) {
       'description': description,
       'serviceConditions': serviceConditions,
       'isActive': isActive,
-      'image': image,
+      'image': {'url': imageUrl}, // Ensure the image field is a map
       'price': price,
     };
   }

@@ -10,6 +10,8 @@ import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/regions_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/city.dart';
+import 'package:homecare/mvc/model/api/lab_model.dart';
+import 'package:homecare/mvc/model/api/lab_test_model.dart';
 import 'package:homecare/mvc/model/api/nurse.dart';
 import 'package:homecare/mvc/model/api/region.dart';
 import 'package:homecare/mvc/view/patient/main_services/booking_details_screen.dart';
@@ -20,14 +22,15 @@ import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/expanded_list.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/message_widget.dart';
-import 'package:homecare/widgets/nurse/available_nurse_card.dart';
+import 'package:homecare/widgets/custom_item_card.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class BookingScreen extends StatefulWidget {
   final int serviceId;
   final num price;
   final bool isNursingService;
-  const BookingScreen({super.key, required this.serviceId, required this.price, required this.isNursingService});
+  final bool? isLabService;
+  const BookingScreen({super.key, required this.serviceId, required this.price, required this.isNursingService, this.isLabService = false});
 
   @override
   State<BookingScreen> createState() => _BookingScreenState();
@@ -52,6 +55,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
   String? selectedTime;
   int? visitHours;
+  List<num> labTestsPrices = [];
 
   bool isValueEnabled(int value) {
     if (selectedTime == null) return true;
@@ -70,7 +74,12 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   List<Nurse> listOfNurses = [];
-  bool listFetched = false;
+  List<LabModel> listOfLabs = [];
+  List<LabTestModel> listOfLabTests = [];
+
+  bool isNursesFetched = false;
+  bool isLabsFetched = false;
+  bool isLabTestsFetched = false;
 
   getNurses() async {
     listOfNurses = await ConnectionController.getNurses(
@@ -84,13 +93,45 @@ class _BookingScreenState extends State<BookingScreen> {
       return list;
     });
     setState(() {
-      listFetched = true;
+      isNursesFetched = true;
+    });
+  }
+
+  getLabs() async {
+    listOfLabs = await ConnectionController.getLaboratories(
+      token: sharedPrefsController.getToken(),
+    ).then((list) {
+      if(sharedPrefsController.sessionTerminated()) {
+        HomeCareStyle.showReLoginDialog(context);
+        return [];
+      }
+      return list;
+    });
+    setState(() {
+      isLabsFetched = true;
+    });
+  }
+
+  getLabTests() async {
+    listOfLabTests = await ConnectionController.getLAbTests(
+      token: sharedPrefsController.getToken(),
+    ).then((list) {
+      if(sharedPrefsController.sessionTerminated()) {
+        HomeCareStyle.showReLoginDialog(context);
+        return [];
+      }
+      return list;
+    });
+    setState(() {
+      isLabTestsFetched = true;
     });
   }
 
   @override
   void initState() {
     getNurses();
+    getLabs();
+    getLabTests();
     super.initState();
   }
 
@@ -124,13 +165,19 @@ class _BookingScreenState extends State<BookingScreen> {
                             selectedDayPredicate: (day) => selectedDays.contains(day),
                             onDaySelected: (selectedDay, focusedDay) {
                               setState(() {
-                                if (selectedDays.contains(selectedDay)) {
-                                  // Remove the day if already selected
-                                  selectedDays.remove(selectedDay);
+                                if (widget.isLabService!) {
+                                  // Allow only one day selection
+                                  selectedDays = [selectedDay];
                                 } else {
-                                  // Add the selected day
-                                  selectedDays.add(selectedDay);
+                                  if (selectedDays.contains(selectedDay)) {
+                                    // Remove the day if already selected
+                                    selectedDays.remove(selectedDay);
+                                  } else {
+                                    // Add the selected day
+                                    selectedDays.add(selectedDay);
+                                  }
                                 }
+                                focusedDay = focusedDay;  // Update focused day
                               });
                             },
                             onPageChanged: (focusedDay) {
@@ -188,10 +235,10 @@ class _BookingScreenState extends State<BookingScreen> {
                           ),
                         ),
                         const SizedBox(height: 10),
-                        if(!widget.isNursingService) const Divider(indent: 20.0, endIndent: 20.0),
-                        if(!widget.isNursingService)Text('اختيار عدد ساعات الزيارة', style: TextStyle(fontSize: 18.0, color: Colors.black)),
-                        if(!widget.isNursingService)const SizedBox(height: 20),
-                        if(!widget.isNursingService) Directionality(
+                        if(!widget.isNursingService && !widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
+                        if(!widget.isNursingService && !widget.isLabService!) Text('اختيار عدد ساعات الزيارة', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+                        if(!widget.isNursingService && !widget.isLabService!) const SizedBox(height: 20),
+                        if(!widget.isNursingService && !widget.isLabService!) Directionality(
                           textDirection: TextDirection.rtl,
                           child: SizedBox(
                             height: 30.0,
@@ -234,9 +281,13 @@ class _BookingScreenState extends State<BookingScreen> {
                             ),
                           ),
                         ),
-                        if(!widget.isNursingService) const SizedBox(height: 10),
+                        if(!widget.isNursingService && !widget.isLabService!) const SizedBox(height: 10),
                         const Divider(indent: 20.0, endIndent: 20.0),
                         AvailableNurses(),
+                        if(widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
+                        if(widget.isLabService!) LabTestTypes(),
+                        if(widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
+                        if(widget.isLabService!) AvailableLabs(),
                         const Divider(indent: 20.0, endIndent: 20.0),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 10.0),
@@ -359,20 +410,19 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   int selectedNurseId = -1;
-
   Column AvailableNurses() {
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text('الممرضين المتاحين', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+        Text('الممرضين المتاحين (اختياري)', style: TextStyle(fontSize: 18.0, color: Colors.black)),
         const SizedBox(height: 10.0),
         Directionality(
           textDirection: TextDirection.rtl,
           child: SizedBox(
             height: 175.0,
             child: listOfNurses.isEmpty ?
-            listFetched ?
+            isNursesFetched ?
             MessageWidget(text: 'لا يوجد ممرضين') :
             HCCPI() :
             ListView.builder(
@@ -399,12 +449,124 @@ class _BookingScreenState extends State<BookingScreen> {
                       debugPrint(selectedNurseId.toString());
                     });
                   },
-                  child: AvailableNurseCard(
+                  child: CustomItemCard(
                     id: nurse.id,
-                    firstName: nurse.firstName,
-                    lastName: nurse.lastName,
-                    rate: nurse.rate,
+                    title: '${nurse.firstName} ${nurse.lastName}',
+                    value: nurse.rate,
                     isSelected: nurse.isSelected,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  List<int> selectedLabTestIds = [];
+  List<String> selectedLabTestNames = [];
+
+  Column LabTestTypes() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text('اختر أنواع التحليل', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+        const SizedBox(height: 10.0),
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: SizedBox(
+            height: 175.0,
+            child: listOfLabTests.isEmpty
+                ? isLabTestsFetched
+                ? MessageWidget(text: 'لا توجد أنواع تحاليل')
+                : HCCPI()
+                : ListView.builder(
+              itemCount: listOfLabTests.length,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemBuilder: (context, index) {
+                LabTestModel labTestModel = listOfLabTests[index];
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      labTestModel.isSelected = !labTestModel.isSelected;
+                      if (labTestModel.isSelected) {
+                        selectedLabTestIds.add(labTestModel.id);
+                        selectedLabTestNames.add(labTestModel.name);
+                        labTestsPrices.add(labTestModel.price);
+                      } else {
+                        selectedLabTestIds.remove(labTestModel.id);
+                        selectedLabTestNames.remove(labTestModel.name);
+                        labTestsPrices.remove(labTestModel.price);
+                      }
+                    });
+                  },
+                  child: CustomItemCard(
+                    id: labTestModel.id,
+                    title: labTestModel.name,
+                    value: labTestModel.price,
+                    isSelected: labTestModel.isSelected,
+                    forLabTest: true,
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  int selectedLabId = -1;
+  String selectedLabName = '';
+  Column AvailableLabs() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text('المخابر المتاحة (اختياري)', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+        const SizedBox(height: 10.0),
+        Directionality(
+          textDirection: TextDirection.rtl,
+          child: SizedBox(
+            height: 175.0,
+            child: listOfLabs.isEmpty ?
+            isLabsFetched ?
+            MessageWidget(text: 'لا توجد مخابر') :
+            HCCPI() :
+            ListView.builder(
+              itemCount: listOfLabs.length,
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemBuilder: (context, index) {
+                LabModel lab = listOfLabs[index];
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (lab.isSelected) {
+                        // Unselect the nurse if already selected
+                        lab.isSelected = false;
+                        selectedLabId = -1;
+                        selectedLabName = '';
+                      } else {
+                        // Select the nurse and unselect others
+                        for (var n in listOfLabs) {
+                          n.isSelected = false;
+                        }
+                        lab.isSelected = true;
+                        selectedLabId = lab.id;
+                        selectedLabName = lab.name;
+                      }
+                      debugPrint(selectedLabId.toString());
+                    });
+                  },
+                  child: CustomItemCard(
+                    id: lab.id,
+                    title: lab.name,
+                    value: lab.rate!,
+                    isSelected: lab.isSelected,
                   ),
                 );
               },
@@ -417,11 +579,18 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> pressMethod() async {
     bool hasRequiredError = false;
+    bool labTestRequired = false;
     bool hasError = false;
 
     // Check required fields
-    if (selectedTime == null || selectedDays.isEmpty || (visitHours == null && !widget.isNursingService)/* || selectedNurseId == -1*/) {
+    if (selectedTime == null || selectedDays.isEmpty || (visitHours == null && !widget.isNursingService && !widget.isLabService!)) {
       hasRequiredError = true;
+    }
+
+    if (widget.isLabService! && selectedLabTestIds.isEmpty) {
+      setState(() {
+        labTestRequired = true;
+      });
     }
 
     // Check conditions for switched
@@ -467,15 +636,24 @@ class _BookingScreenState extends State<BookingScreen> {
     if (hasRequiredError) {
       HomeCareStyle.showSnackBar(
         context,
-        content: 'هناك حقول في الصفحة مطلوبة',
+        content: labTestRequired ? 'هناك حقول في الصفحة مطلوبة ، كما يرجى اختيار نوع تحليل واحد على الأقل' : 'هناك حقول في الصفحة مطلوبة',
+        icon: CupertinoIcons.info,
+      );
+      return;
+    } else if (labTestRequired) {
+      HomeCareStyle.showSnackBar(
+        context,
+        content: 'يرجى اختيار نوع تحليل واحد على الأقل',
         icon: CupertinoIcons.info,
       );
       return;
     }
+
     // Stop navigation if there are errors
     if (hasError) {
       return;
     }
+
     // Proceed if no validation errors
     final selectedDatesWithTime = selectedDays.map((day) {
       final timeParts = selectedTime!.split(':');
@@ -495,15 +673,28 @@ class _BookingScreenState extends State<BookingScreen> {
       return combinedDateTime.toIso8601String();
     }).toList();
 
+    num totalFinalPrice = visitHours != null ? widget.price * selectedDatesWithTime.length * visitHours! : widget.price * selectedDatesWithTime.length;
+
+    if (widget.isLabService!) {
+      for (var price in labTestsPrices) {
+        totalFinalPrice += price;
+      }
+    }
+
     debugPrint(selectedDatesWithTime.toString()); // Example: ["2024-12-11T18:19:00.000Z"]
     Navigator.push(context, MaterialPageRoute(builder: (context) => BookingDetailsScreen(
       serviceId: widget.serviceId,
       nurseId: selectedNurseId,
-      visitDurationInHours: widget.isNursingService ? 0 : visitHours!,
+      visitDurationInHours: (widget.isNursingService || widget.isLabService!) ? 0 : visitHours!,
       regionId: selectedRegionId,
       details: addressCtrl.text,
       visitsDates: selectedDatesWithTime,
-      totalPrice: visitHours != null ? widget.price * selectedDatesWithTime.length * visitHours! : widget.price * selectedDatesWithTime.length,
+      selectedLabTests: selectedLabTestNames,
+      labTestsIds: selectedLabTestIds,
+      totalPrice: totalFinalPrice,
+      forLabService: widget.isLabService!,
+      selectedLabId: selectedLabId,
+      selectedLabName: selectedLabName,
     )));
   }
 

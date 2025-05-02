@@ -1,7 +1,11 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously
 
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -20,6 +24,7 @@ import 'package:homecare/widgets/custom_dropdown_button.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/menu_text.dart';
+import 'package:homecare/widgets/profile_image_widget.dart';
 import 'package:homecare/widgets/progress_indicator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -60,10 +65,50 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
   double latitude = 0.0;
   double longitude = 0.0;
 
+  String? imagePath;
+
   @override
   void initState() {
     initializeData();
     super.initState();
+  }
+
+  Future<void> pickImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+
+    if (result != null) {
+      setState(() {
+        imagePath = result.files.single.path;
+      });
+      uploadImage(imagePath!);
+    }
+  }
+
+  Future<void> uploadImage(String filePath) async {
+    setState(() {
+      loading = true;
+    });
+
+    int result = await ConnectionController.uploadFile(
+      folderName: 1,
+      token: sharedPrefsController.getToken(),
+      filePath: filePath,
+    );
+    setState(() {
+      loading = false;
+    });
+    Fluttertoast.showToast(
+      msg: result != -1 ? "تم تحميل الصورة" : "فشل تحميل الصورة",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.grey[600],
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
   }
 
   @override
@@ -89,13 +134,25 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
                       children: [
                         Stack(
                           children: [
-                            const Align(alignment: Alignment.center, child: CircleAvatar(radius: 75.0, backgroundColor: HomeCareTheme.secondaryColor)),
+                            Align(
+                              alignment: Alignment.center,
+                              child: imagePath != null
+                                  ? CircleAvatar(
+                                radius: 75.0,
+                                backgroundColor: HomeCareTheme.secondaryColor,
+                                backgroundImage: FileImage(File(imagePath!)),
+                              ) : ProfileImageWidget(
+                                sharedPrefsController: sharedPrefsController,
+                                width: 150.0,
+                                height: 150.0,
+                              ),
+                            ),
                             Align(
                               alignment: Alignment.center,
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 120.0, top: 75.0),
                                 child: IconButton(
-                                  onPressed: () {},
+                                  onPressed: pickImage,
                                   icon: const Icon(CupertinoIcons.add_circled_solid, color: HomeCareTheme.primaryColor, size: 50.0),
                                 ),
                               ),
@@ -412,7 +469,7 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
         token: token,
         dateOfBirth: birthDate.substring(0, 10),
         occupation: occupationCtrl.text,
-        personalImageId: null,
+        personalImageId: sharedPrefsController.getIdOfProfileImage(),
         latitude: latitude,
         longitude: longitude,
         regionId: selectedRegionId,

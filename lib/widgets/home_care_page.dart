@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/mvc/view/common/notifications_screen.dart';
 import 'package:homecare/mvc/view/supporter/add_patient_by_supporter_screen.dart';
@@ -181,19 +182,28 @@ class _HomeCarePageState extends State<HomeCarePage> {
                       Padding(
                         padding: const EdgeInsets.only(top: 5.0),
                         child: CustomButton(
-                          onPressed: () {
-                            Navigator.of(context)
+                          onPressed: () async {
+                            String result = await Navigator.of(context)
                                 .push(MaterialPageRoute(
                                 builder: (context) =>
-                                    AddPatientBySupporterScreen()))
-                                .then((_) {
+                                    AddPatientBySupporterScreen())).then((result) {
+                              if(result == 'complete-info') {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const AddPatientBySupporterScreen(),
+                                  ),
+                                );
+                              } else {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MainScreenSupporter(),
+                                  ),
+                                );
+                              }
                               // Reload the screen after adding a patient
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const MainScreenSupporter(),
-                                ),
-                              );
+                              return result;
                             });
                           },
                           title: Text(

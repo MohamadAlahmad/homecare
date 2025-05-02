@@ -100,10 +100,10 @@ class _NursingServicesScreenState extends State<NursingServicesScreen> {
       itemCount: services.length,
       itemBuilder: (context, i) {
         return ServiceCard(
-          context,
+          //context,
           title: services[i].name,
           description: services[i].description,
-          imagePath: services[i].image,
+          imageUrl: services[i].imageUrl,
           price: services[i].price,
           onClick: () {
             showModalBottomSheet(
@@ -115,7 +115,7 @@ class _NursingServicesScreenState extends State<NursingServicesScreen> {
                   description: services[i].description,
                   preConditions: services[i].serviceConditions,
                   price: services[i].price,
-                  imagePath: services[i].image,
+                  imagePath: services[i].imageUrl,
                   isNutrition: false,
                   category: 'خدمات التمريض',
                   onPressed: () {

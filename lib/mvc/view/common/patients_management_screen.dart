@@ -16,9 +16,14 @@ import 'package:homecare/widgets/message_widget.dart';
 import 'package:homecare/widgets/nurse/patient_added_by_nurse_card.dart';
 import 'package:homecare/widgets/re_login_widget.dart';
 
-class PatientsManagementScreen extends StatelessWidget {
-  PatientsManagementScreen({super.key});
+class PatientsManagementScreen extends StatefulWidget {
+  const PatientsManagementScreen({super.key});
 
+  @override
+  State<PatientsManagementScreen> createState() => _PatientsManagementScreenState();
+}
+
+class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
   final SharedPrefsController sharedPrefsController = SharedPrefsController();
 
   Future<List<Patient>> getPatients() async {
@@ -75,12 +80,58 @@ class PatientsManagementScreen extends StatelessWidget {
                                       name: '${patient.firstName} ${patient.lastName}',
                                       address: patient.locationDetails,
                                       onDelete: () async {
-                                        // Handle patient deletion logic
-                                        // Refresh the screen
-                                        /*Navigator.pushReplacement(
+                                        bool isDeleting = false;
+                                        HomeCareStyle.showCustomDialog(
                                           context,
-                                          MaterialPageRoute(builder: (context) => const PatientsManagementScreen()),
-                                        );*/
+                                          title: 'تأكيد الحذف',
+                                          buttonTitle: 'حذف',
+                                          content: StatefulBuilder(
+                                            builder: (context, setState) {
+                                              return Column(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text('هل أنت متأكد أنك تريد حذف المريض ؟'),
+                                                  if (isDeleting)
+                                                    Padding(
+                                                      padding: const EdgeInsets.only(top: 16.0),
+                                                      child: HCCPI(color: HomeCareTheme.primaryColorBold, size: 25.0),
+                                                    ),
+                                                ],
+                                              );
+                                            },
+                                          ),
+                                          onYesPressed: () async {
+                                            setState(() {
+                                              isDeleting = true;
+                                            });
+                                            print('ID is : ${patient.id}');
+                                            var result = await ConnectionController.deletePatient(
+                                              token: sharedPrefsController.getToken(),
+                                              id: patient.id,
+                                            );
+                                            if (result) {
+                                              setState(() {
+                                                getPatients();
+                                              });
+                                              if (!mounted) return; // Check if the widget is still mounted
+                                              HomeCareStyle.showSnackBar(
+                                                context,
+                                                success: true,
+                                                content: 'تم الحذف بنجاح',
+                                                icon: Icons.check_circle,
+                                              );
+                                            } else {
+                                              if (!mounted) return; // Check if the widget is still mounted
+                                              HomeCareStyle.showSnackBar(
+                                                context,
+                                                content: sharedPrefsController.getMSG(),
+                                                icon: Icons.info_outline,
+                                              );
+                                            }
+                                            //Navigator.of(context).pop(); // Close the dialog
+                                          },
+                                          buttonColor: Colors.red,
+                                        );
                                       },
                                     );
                                   },

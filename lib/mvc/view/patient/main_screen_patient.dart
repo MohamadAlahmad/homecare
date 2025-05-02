@@ -20,6 +20,7 @@ import 'package:homecare/widgets/message_widget.dart';
 import 'package:homecare/widgets/patient/home_card.dart';
 import 'package:homecare/widgets/patient/package_card.dart';
 import 'package:homecare/widgets/patient_brief_card.dart';
+import 'package:homecare/widgets/profile_image_widget.dart';
 import 'package:homecare/widgets/re_login_widget.dart';
 
 class MainScreenPatient extends StatefulWidget {
@@ -30,11 +31,11 @@ class MainScreenPatient extends StatefulWidget {
 }
 
 class _MainScreenPatientState extends State<MainScreenPatient> {
-
   SharedPrefsController sharedPrefsController = SharedPrefsController();
   List<Patient> listOfPatients = [];
   late Future<List<Package>> futurePackages;
   bool empty = false;
+
   @override
   void initState() {
     debugPrint('HOME : Is Session terminated ? Answer : ${SharedPrefsController().sessionTerminated()}');
@@ -72,114 +73,104 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
   @override
   Widget build(BuildContext context) {
     return sharedPrefsController.sessionTerminated() ? ReLoginWidget(context) : HomeCarePage(
-        title: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
-        image: Container(
-          height: MediaQuery.of(context).size.height * 0.08,
-          width: MediaQuery.of(context).size.width * 0.15,
-          decoration: BoxDecoration(
-            color: HomeCareTheme.secondaryColor,
-            shape: BoxShape.circle,
-            image: DecorationImage(
-              image: AssetImage(
-                sharedPrefsController.getGender() == 1
-                    ? 'assets/images/person1_temp.png'
-                    : 'assets/images/person2_temp.png',
-              ),
-            ),
-          ),
-        ),
-        onImagePressed: () {
-          pagePatientController.animateToPage(0,
-            duration: const Duration(milliseconds: 400),
-             curve: Curves.easeOutQuad,
+      title: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
+      image: ProfileImageWidget(
+        sharedPrefsController: sharedPrefsController,
+        height: MediaQuery.of(context).size.height * 0.08,
+        width: MediaQuery.of(context).size.width * 0.15,
+      ),
+      onImagePressed: () {
+        pagePatientController.animateToPage(0,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutQuad,
+        );
+      },
+      listOfPatients: empty && listOfPatients.isEmpty
+          ? MessageWidget(text: 'لا يوجد مرضى', small: true, color: Colors.white) : listOfPatients.isEmpty
+          ? HCCPI() : ListView.builder(
+        itemCount: listOfPatients.length,
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemBuilder: (context, index) {
+          return PatientBriefCard(
+            context,
+            name: '${listOfPatients[index].firstName} ${listOfPatients[index].lastName}',
+            address: listOfPatients[index].locationDetails.isEmpty ? '(العنوان فارغ)' : listOfPatients[index].locationDetails,
+            onPressed: () {
+              bool isLoading = false;
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (BuildContext dialogContext) {
+                  return StatefulBuilder(
+                    builder: (context, setStateDialog) {
+                      return Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: AlertDialog(
+                          title: isLoading
+                              ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
+                              : Text('الانتقال إلى حساب المريض'),
+                          content: isLoading ? SizedBox.shrink() : Text('أنت على وشك فتح التطبيق كحساب مريض !'),
+                          actions: <Widget>[
+                            if (!isLoading)
+                              SizedBox(
+                                width: 120.0,
+                                child: IconButton(
+                                  onPressed: () async {
+                                    setStateDialog(() => isLoading = true);
+                                    var result = await ConnectionController.switchAccount(
+                                      token: sharedPrefsController.getToken(),
+                                      patientId: listOfPatients[index].id,
+                                    );
+                                    Navigator.of(dialogContext).pop();
+                                    if (result == 'true') {
+                                      sharedPrefsController.saveUserType(type: 2);
+                                      if (context.mounted) {
+                                        sharedPrefsController.setIsSubUser(value: true);
+                                        Navigator.of(context).pushAndRemoveUntil(
+                                          MaterialPageRoute(builder: (context) => HomePatient()),
+                                              (Route<dynamic> route) => false,
+                                        );
+                                      }
+                                    } else {
+                                      HomeCareStyle.showSnackBar(
+                                        context,
+                                        content: 'فشل تحويل الحساب ، حاول لاحقاً',
+                                        icon: CupertinoIcons.exclamationmark_triangle_fill,
+                                      );
+                                      debugPrint('<<< FAILED >>>');
+                                    }
+                                  },
+                                  style: IconButton.styleFrom(
+                                    elevation: 0.0,
+                                    backgroundColor: Colors.green.withValues(alpha: 0.1),
+                                  ),
+                                  icon: Text('تأكيد', style: TextStyle(color: Colors.green, fontSize: 14.0)),
+                                ),
+                              ),
+                            if (!isLoading)
+                              SizedBox(
+                                width: 100.0,
+                                child: IconButton(
+                                  onPressed: () => Navigator.of(dialogContext).pop(),
+                                  style: IconButton.styleFrom(
+                                    elevation: 0.0,
+                                    backgroundColor: Colors.red.withValues(alpha: 0.1),
+                                  ),
+                                  icon: Text('تراجع', style: TextStyle(color: Colors.red, fontSize: 14.0)),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              );
+            },
           );
         },
-        listOfPatients: empty && listOfPatients.isEmpty
-            ? MessageWidget(text: 'لا يوجد مرضى', small: true, color: Colors.white) : listOfPatients.isEmpty
-            ? HCCPI() : ListView.builder(
-          itemCount: listOfPatients.length,
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          itemBuilder: (context, index) {
-            return PatientBriefCard(
-              context,
-              name: '${listOfPatients[index].firstName} ${listOfPatients[index].lastName}',
-              address: listOfPatients[index].locationDetails.isEmpty ? '(العنوان فارغ)' : listOfPatients[index].locationDetails,
-              onPressed: () {
-                bool isLoading = false;
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (BuildContext dialogContext) {
-                    return StatefulBuilder(
-                      builder: (context, setStateDialog) {
-                        return Directionality(
-                          textDirection: TextDirection.rtl,
-                          child: AlertDialog(
-                            title: isLoading
-                                ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
-                                : Text('الانتقال إلى حساب المريض'),
-                            content: isLoading ? SizedBox.shrink() : Text('أنت على وشك فتح التطبيق كحساب مريض !'),
-                            actions: <Widget>[
-                              if (!isLoading)
-                                SizedBox(
-                                  width: 120.0,
-                                  child: IconButton(
-                                    onPressed: () async {
-                                      setStateDialog(() => isLoading = true);
-                                      var result = await ConnectionController.switchAccount(
-                                        token: sharedPrefsController.getToken(),
-                                        patientId: listOfPatients[index].id,
-                                      );
-                                      Navigator.of(dialogContext).pop();
-                                      if (result == 'true') {
-                                        sharedPrefsController.saveUserType(type: 2);
-                                        if (context.mounted) {
-                                          sharedPrefsController.setIsSubUser(value: true);
-                                          Navigator.of(context).pushAndRemoveUntil(
-                                            MaterialPageRoute(builder: (context) => HomePatient()),
-                                                (Route<dynamic> route) => false,
-                                          );
-                                        }
-                                      } else {
-                                        HomeCareStyle.showSnackBar(
-                                          context,
-                                          content: 'فشل تحويل الحساب ، حاول لاحقاً',
-                                          icon: CupertinoIcons.exclamationmark_triangle_fill,
-                                        );
-                                        debugPrint('<<< FAILED >>>');
-                                      }
-                                    },
-                                    style: IconButton.styleFrom(
-                                      elevation: 0.0,
-                                      backgroundColor: Colors.green.withValues(alpha: 0.1),
-                                    ),
-                                    icon: Text('تأكيد', style: TextStyle(color: Colors.green, fontSize: 14.0)),
-                                  ),
-                                ),
-                              if (!isLoading)
-                                SizedBox(
-                                  width: 100.0,
-                                  child: IconButton(
-                                    onPressed: () => Navigator.of(dialogContext).pop(),
-                                    style: IconButton.styleFrom(
-                                      elevation: 0.0,
-                                      backgroundColor: Colors.red.withValues(alpha: 0.1),
-                                    ),
-                                    icon: Text('تراجع', style: TextStyle(color: Colors.red, fontSize: 14.0)),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      },
-                    );
-                  },
-                );
-              },
-            );
-          },
-        ),
+      ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -205,16 +196,16 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
                 crossAxisCount: 2,
                 children: List.generate(Globals.listOfServices.length, (index) =>
                     HomeCard(
-                      context,
-                      id: Globals.listOfServices[index].id,
-                      isActive: Globals.listOfServices[index].isActive,
-                      title: Globals.listOfServices[index].name,
-                      imageUrl: Globals.listOfServices[index].image,
-                      onClick: () {
-                        if(Globals.listOfServices[index].isActive) {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => Globals.listOfServices[index].page));
+                        context,
+                        id: Globals.listOfServices[index].id,
+                        isActive: Globals.listOfServices[index].isActive,
+                        title: Globals.listOfServices[index].name,
+                        imageUrl: Globals.listOfServices[index].image,
+                        onClick: () {
+                          if(Globals.listOfServices[index].isActive) {
+                            Navigator.push(context, MaterialPageRoute(builder: (context) => Globals.listOfServices[index].page));
+                          }
                         }
-                      }
                     ),
                 ),
               ),
@@ -229,7 +220,7 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
                     context,
                     title: 'طلب مستعجَل',
                     buttonTitle: 'buttonTitle',
-                    content: 'عزيزي المستخدم، نعمل حاليًا على تفعيل خدمة الطلب المستعجل لضمان أفضل رعاية طبية لك. ستكون الخدمة متاحة قريبًا، ونقدّر تفهّمك ودعمك!',
+                    content: Text('عزيزي المستخدم، نعمل حاليًا على تفعيل خدمة الطلب المستعجل لضمان أفضل رعاية طبية لك. ستكون الخدمة متاحة قريبًا، ونقدّر تفهّمك ودعمك!'),
                     onYesPressed: () {},
                     oneButton: true,
                   );
@@ -290,5 +281,5 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
       },
     );
   }
-
 }
+

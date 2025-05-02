@@ -55,7 +55,7 @@ class _HealthRecordPatientScreenState extends State<HealthRecordPatientScreen> {
       setState(() {
         healthRecords.addAll(newRecords);
         hasMoreHealthRecords = newRecords.isNotEmpty;
-        isInitialLoadingHealthRecords = false; // Initial loading is done
+        isInitialLoadingHealthRecords = false;
       });
     }
   }
@@ -149,10 +149,10 @@ class _HealthRecordPatientScreenState extends State<HealthRecordPatientScreen> {
                 ),
               ).then((_) {
                 setState(() {
-                  healthRecords.clear(); // Clear current list
+                  healthRecords.clear();
                   healthRecordsPage = 1;
-                  isInitialLoadingHealthRecords = true; // Show loading indicator
-                  getHealthRecords(); // Refresh data
+                  isInitialLoadingHealthRecords = true;
+                  getHealthRecords();
                 });
               });
             },

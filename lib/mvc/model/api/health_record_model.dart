@@ -1,5 +1,7 @@
 import 'package:homecare/mvc/model/api/case.dart';
 import 'package:homecare/mvc/model/api/previous_case.dart';
+import 'package:homecare/mvc/model/api/lab_model.dart';
+import 'package:homecare/mvc/model/api/lab_test_model.dart';
 
 class HealthRecordModel {
   int id;
@@ -11,6 +13,8 @@ class HealthRecordModel {
   String visitDate;
   GeocodedAddress? geocodedAddress;
   PreviousCase? visitCase;
+  LabModel? lab;
+  List<LabTestModel> labTests;
 
   HealthRecordModel({
     required this.id,
@@ -22,6 +26,8 @@ class HealthRecordModel {
     required this.visitDate,
     required this.geocodedAddress,
     required this.visitCase,
+    this.lab,
+    this.labTests = const [],
   });
 
   factory HealthRecordModel.fromJson(Map<String, dynamic> json) {
@@ -37,10 +43,15 @@ class HealthRecordModel {
           ? GeocodedAddress.fromJson(json['geocodedAddress'])
           : null,
       visitCase: json['sesssionDetails'] != null
-          ? PreviousCase.fromJson(json['sesssionDetails'])
+          ? PreviousCase.fromJson(json['sesssionDetails'], json['visitDate'])
           : null,
+      lab: json['lab'] != null ? LabModel.fromJson(json['lab']) : null,
+      labTests: (json['labTests'] as List?)
+          ?.map((labTestJson) => LabTestModel.fromJson(labTestJson))
+          .toList() ?? [],
     );
   }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -51,6 +62,8 @@ class HealthRecordModel {
       'medicalServiceName': medicalServiceName,
       'visitDate': visitDate,
       'geocodedAddress': geocodedAddress?.toJson(),
+      'lab': lab?.toJson(),
+      'labTests': labTests.map((labTest) => labTest.toJson()).toList(),
     };
   }
 }

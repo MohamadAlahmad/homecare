@@ -7,12 +7,13 @@ import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/nurse.dart';
+import 'package:homecare/mvc/view/supporter/personal_profile_screen.dart';
 import 'package:homecare/widgets/buttons.dart';
 import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/menu_text.dart';
-import 'package:homecare/widgets/nurse/available_nurse_card.dart';
+import 'package:homecare/widgets/custom_item_card.dart';
 import 'package:homecare/widgets/progress_indicator.dart';
 
 class AddPatientBySupporterScreen extends StatefulWidget {
@@ -169,17 +170,6 @@ class _AddPatientBySupporterScreenState extends State<AddPatientBySupporterScree
     // Perform form validation
     final isFormValid = formKey.currentState!.validate();
 
-    /*if(selectedNurseId == -1) {
-      setState(() {
-        showNurseMsg = true;
-      });
-      return;
-    } else {
-      setState(() {
-        showNurseMsg = false;
-      });
-    }*/
-
     if (isFormValid) {
       // All validations passed
       setState(() {
@@ -202,9 +192,9 @@ class _AddPatientBySupporterScreenState extends State<AddPatientBySupporterScree
       setState(() {
         loading = false;
       });
-      if(sharedPrefsController.sessionTerminated()) {
+      if (sharedPrefsController.sessionTerminated()) {
         HomeCareStyle.showReLoginDialog(context);
-      } else if(result) {
+      } else if (result == 'false') {
         HomeCareStyle.showSnackBar(
           context,
           success: true,
@@ -212,6 +202,13 @@ class _AddPatientBySupporterScreenState extends State<AddPatientBySupporterScree
           icon: Icons.check_circle,
         );
         Navigator.pop(context);
+      } else if (result == 'complete-info') {
+        HomeCareStyle.showSnackBar(
+          context,
+          content: sharedPrefsController.getMSG(),
+          icon: Icons.info_outline,
+        );
+        Navigator.pop(context, 'complete-info');
       } else {
         HomeCareStyle.showSnackBar(
           context,
@@ -221,6 +218,7 @@ class _AddPatientBySupporterScreenState extends State<AddPatientBySupporterScree
       }
     }
   }
+
 
   Padding RequiredText() => Padding(
     padding: const EdgeInsets.only(right: 10.0),
@@ -268,11 +266,10 @@ class _AddPatientBySupporterScreenState extends State<AddPatientBySupporterScree
                       debugPrint(selectedNurseId.toString());
                     });
                   },
-                  child: AvailableNurseCard(
+                  child: CustomItemCard(
                     id: nurse.id,
-                    firstName: nurse.firstName,
-                    lastName: nurse.lastName,
-                    rate: nurse.rate,
+                    title: '${nurse.firstName} ${nurse.lastName}',
+                    value: nurse.rate,
                     isSelected: nurse.isSelected,
                   ),
                 );

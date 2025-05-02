@@ -1,7 +1,11 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously
 
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -22,19 +26,19 @@ import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/menu_text.dart';
 import 'package:homecare/widgets/progress_indicator.dart';
-
+import 'package:homecare/widgets/profile_image_widget.dart'; // Import the ProfileImageWidget
 import 'package:permission_handler/permission_handler.dart';
 
 class MyProfileScreen extends StatefulWidget {
   final bool youDidNotEnterYourInfo;
-  const MyProfileScreen({super.key, required this.youDidNotEnterYourInfo});
+  final bool forBookingThroughPackage;
+  const MyProfileScreen({super.key, required this.youDidNotEnterYourInfo, required this.forBookingThroughPackage});
 
   @override
   State<MyProfileScreen> createState() => _MyProfileScreenState();
 }
 
 class _MyProfileScreenState extends State<MyProfileScreen> {
-
   final TextEditingController nameCtrl = TextEditingController();
   final TextEditingController lastNameCtrl = TextEditingController();
   final TextEditingController phoneCtrl = TextEditingController();
@@ -47,8 +51,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   final formKey = GlobalKey<FormState>();
   String selectedCity = '';
   int selectedCityId = 1;
-  //bool citySelected = false;
-  //bool regionSelected = false;
   String selectedRegion = '';
   int selectedRegionId = 0;
   String? selectedGender;
@@ -65,6 +67,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   double latitude = 0.0;
   double longitude = 0.0;
 
+  String? imagePath;
+
   @override
   void initState() {
     initializeData();
@@ -78,10 +82,47 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     });
   }
 
+  Future<void> pickImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+
+    if (result != null) {
+      setState(() {
+        imagePath = result.files.single.path;
+      });
+      uploadImage(imagePath!);
+    }
+  }
+
+  Future<void> uploadImage(String filePath) async {
+    setState(() {
+      loading = true;
+    });
+
+    int result = await ConnectionController.uploadFile(
+      folderName: 1,
+      token: sharedPrefsController.getToken(),
+      filePath: filePath,
+    );
+    setState(() {
+      loading = false;
+    });
+    Fluttertoast.showToast(
+      msg: result != -1 ? "تم تحميل الصورة" : "فشل تحميل الصورة",
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.grey[600],
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      //backgroundColor: Colors.white,
       body: GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus();
@@ -101,13 +142,25 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                       children: [
                         Stack(
                           children: [
-                            const Align(alignment: Alignment.center, child: CircleAvatar(radius: 75.0, backgroundColor: HomeCareTheme.secondaryColor)),
+                            Align(
+                              alignment: Alignment.center,
+                              child: imagePath != null
+                                  ? CircleAvatar(
+                                radius: 75.0,
+                                backgroundColor: HomeCareTheme.secondaryColor,
+                                backgroundImage: FileImage(File(imagePath!)),
+                              ) : ProfileImageWidget(
+                                sharedPrefsController: sharedPrefsController,
+                                width: 150.0,
+                                height: 150.0,
+                              ),
+                            ),
                             Align(
                               alignment: Alignment.center,
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 120.0, top: 75.0),
                                 child: IconButton(
-                                  onPressed: () {},
+                                  onPressed: pickImage,
                                   icon: const Icon(CupertinoIcons.add_circled_solid, color: HomeCareTheme.primaryColor, size: 50.0),
                                 ),
                               ),
@@ -173,7 +226,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             ],
                           ),
                         ),
-                        if(showGenderMsg) RequiredText(),
+                        if (showGenderMsg) RequiredText(),
                         MenuText(' : رقم الهاتف'),
                         CustomTextFieldWithLabel(
                           context,
@@ -203,14 +256,12 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                           },
                         ),
                         const SizedBox(height: 10.0),
-                        //const SizedBox(height: 10.0),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             MenuText(' : المدينة'),
                             const SizedBox(height: 5.0),
                             CustomDropdownWidget<City>(
-                              //enabled: true,
                               items: citiesController.cities,
                               selectedItem: selectedCity.isEmpty
                                   ? null
@@ -222,7 +273,6 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                 setState(() {
                                   selectedCityId = value?.id ?? 0;
                                   selectedCity = value?.name ?? '';
-                                  //citySelected = true;
                                 });
                               },
                               hintText: 'المدينة',
@@ -244,26 +294,26 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             ),
                             const SizedBox(height: 5.0),
                             CustomDropdownWidget<Region>(
-                              //enabled: citySelected,
                               showMsg: showRegionMsg,
                               items: selectedCityId == 1 ? regionsController.regions1 : regionsController.regions2,
                               selectedItem: selectedRegion.isEmpty
                                   ? null
-                                  : selectedCityId == 1 ? regionsController.regions1.firstWhere(
+                                  : selectedCityId == 1
+                                  ? regionsController.regions1.firstWhere(
                                     (region) => region.name == selectedRegion,
                                 orElse: () => regionsController.regions1[0],
-                              ) : regionsController.regions2.firstWhere(
+                              )
+                                  : regionsController.regions2.firstWhere(
                                     (region) => region.name == selectedRegion,
                                 orElse: () => regionsController.regions2[0],
                               ),
                               onItemSelected: (Region? value) {
                                 setState(() {
                                   selectedRegion = value?.name ?? '';
-                                  //regionSelected = true;
                                   selectedRegionId = value?.id ?? 0;
                                 });
                               },
-                              hintText:  'المنطقة',
+                              hintText: 'المنطقة',
                               displayText: (Region region) => region.name,
                             ),
                           ],
@@ -290,14 +340,11 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                           flag: showLocationMsg,
                           child: InkWell(
                             onTap: () async {
-                              // Request location permission
                               PermissionStatus permissionStatus = await Permission.location.request();
-
                               LatLng initialLocation = const LatLng(33.5138, 36.2765); // Default to Damascus
                               bool useCurrentLocation = false;
 
                               if (permissionStatus.isGranted) {
-                                // Get the current location if permission is granted
                                 Position position = await Geolocator.getCurrentPosition();
                                 initialLocation = LatLng(position.latitude, position.longitude);
                                 useCurrentLocation = true;
@@ -331,14 +378,14 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                 Text(
                                   latitude == 0.0 && longitude == 0.0
                                       ? 'الموقع على الخارطة'
-                                      : '${'$latitude'.substring(0, 5)} - ${'$longitude'.substring(0, 5)}',
+                                      : '${latitude.toStringAsFixed(5)} - ${longitude.toStringAsFixed(5)}',
                                   style: TextStyle(fontSize: 16.0, color: Colors.grey[600]),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        if(showLocationMsg) RequiredText(location: true),
+                        if (showLocationMsg) RequiredText(location: true),
                         MenuText(' : تاريخ الميلاد'),
                         CustomMenuItem(
                           context,
@@ -352,8 +399,8 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                                 builder: (BuildContext context, Widget? child) {
                                   return Theme(
                                     data: ThemeData.light().copyWith(
-                                      colorScheme: const ColorScheme.light(primary: HomeCareTheme.primaryColor), // Text color
-                                      buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary), // Button text color
+                                      colorScheme: const ColorScheme.light(primary: HomeCareTheme.primaryColor),
+                                      buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
                                     ),
                                     child: child!,
                                   );
@@ -366,11 +413,16 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                             },
                             child: Align(
                               alignment: Alignment.centerRight,
-                              child: Text(birthDate.isEmpty || birthDate == 'null' ? 'قم باختيار تاريخ الميلاد' : 'تاريخ ميلادك : ${birthDate.substring(0, 10)}', style: TextStyle(fontSize: 16.0, color: Colors.grey[600])),
+                              child: Text(
+                                birthDate.isEmpty || birthDate == 'null'
+                                    ? 'قم باختيار تاريخ الميلاد'
+                                    : 'تاريخ ميلادك : ${birthDate.substring(0, 10)}',
+                                style: TextStyle(fontSize: 16.0, color: Colors.grey[600]),
+                              ),
                             ),
                           ),
                         ),
-                        if(showBirthDateMsg) RequiredText(),
+                        if (showBirthDateMsg) RequiredText(),
                         Padding(
                           padding: const EdgeInsets.symmetric(vertical: 50.0),
                           child: Center(
@@ -378,7 +430,9 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
                               width: HomeCareSize.width(context),
                               height: 50.0,
                               onPressed: loading ? () {} : validateAndSubmit,
-                              title: loading ? HCIndicator() : const Text('حفظ التغييرات', style: TextStyle(fontSize: 16.0, color: Colors.white)),
+                              title: loading
+                                  ? HCIndicator()
+                                  : const Text('حفظ التغييرات', style: TextStyle(fontSize: 16.0, color: Colors.white)),
                               backgroundColor: HomeCareTheme.primaryColor,
                             ),
                           ),
@@ -396,6 +450,52 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   }
 
   bool loading = false;
+
+  initializeData() {
+    nameCtrl.text = sharedPrefsController.getFirstName();
+    lastNameCtrl.text = sharedPrefsController.getLastName();
+    genderValue = sharedPrefsController.getGender();
+    if(genderValue == 0) genderValue = 1;
+    selectedGender = genderValue == 2 ? 'أنثى' : 'ذكر';
+    phoneCtrl.text = '0${sharedPrefsController.getMobileNumber()}';
+    alterPhoneCtrl.text = sharedPrefsController.getAltMobileNumber();
+    birthDate = sharedPrefsController.getBirthDate();
+    addressCtrl.text = sharedPrefsController.getAddressDetails();
+    latitude = sharedPrefsController.getLatitude();
+    longitude = sharedPrefsController.getLongitude();
+    selectedCityId = sharedPrefsController.getCityId();
+    selectedRegionId = sharedPrefsController.getRegionId();
+    debugPrint('city id   ===> $selectedCityId');
+    debugPrint('region id ===> $selectedRegionId');
+    debugPrint('length ===> ${citiesController.cities.length}');
+    debugPrint('length ===> ${regionsController.regions1.length}');
+    selectedCity = citiesController.cities.isEmpty
+        ? ''
+        : citiesController.cities
+        .firstWhere(
+          (city) => selectedCityId == city.id,
+      orElse: () => City(id: 0, name: ''), //fallback city
+    ).name;
+
+    selectedRegion = selectedCityId == 1
+        ? regionsController.regions1.isEmpty
+        ? ''
+        : regionsController.regions1
+        .firstWhere(
+          (region) => selectedRegionId == region.id,
+      orElse: () => Region(id: 0, name: ''), //fallback region
+    ).name
+        : regionsController.regions2.isEmpty
+        ? ''
+        : regionsController.regions2
+        .firstWhere(
+          (region) => selectedRegionId == region.id,
+      orElse: () => Region(id: 0, name: ''), //fallback region
+    ).name;
+
+    debugPrint('city    ===> $selectedCity');
+    debugPrint('Region  ===> $selectedRegion');
+  }
 
   void validateAndSubmit() async {
     // Perform form validation
@@ -461,7 +561,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         dialCodeForAlternativePhoneNumber: '+963',
         alternativePhoneNumber: alterPhoneCtrl.text,
         gender: genderValue,
-        personalImageId: null,
+        personalImageId: sharedPrefsController.getIdOfProfileImage(),
         latitude: latitude,
         longitude: longitude,
         regionId: selectedRegionId,
@@ -493,9 +593,13 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
         sharedPrefsController.saveAddressDetails(details: addressCtrl.text);
         Navigator.pop(context);
         if(widget.youDidNotEnterYourInfo) {
-          Navigator.pop(context);
-          Navigator.pop(context);
-          Navigator.pop(context);
+          if(widget.forBookingThroughPackage) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pop(context);
+            Navigator.pop(context);
+            Navigator.pop(context);
+          }
         } else {
           pagePatientController.animateToPage(2,
             duration: const Duration(milliseconds: 400),
@@ -519,51 +623,5 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
       child: Text(location! ? 'الموقع مطلوب' : 'حقل مطلوب', style: TextStyle(fontSize: 12.0, color: Colors.red[900]!)),
     ),
   );
-
-  initializeData() {
-    nameCtrl.text = sharedPrefsController.getFirstName();
-    lastNameCtrl.text = sharedPrefsController.getLastName();
-    genderValue = sharedPrefsController.getGender();
-    if(genderValue == 0) genderValue = 1;
-    selectedGender = genderValue == 2 ? 'أنثى' : 'ذكر';
-    phoneCtrl.text = '0${sharedPrefsController.getMobileNumber()}';
-    alterPhoneCtrl.text = sharedPrefsController.getAltMobileNumber();
-    birthDate = sharedPrefsController.getBirthDate();
-    addressCtrl.text = sharedPrefsController.getAddressDetails();
-    latitude = sharedPrefsController.getLatitude();
-    longitude = sharedPrefsController.getLongitude();
-    selectedCityId = sharedPrefsController.getCityId();
-    selectedRegionId = sharedPrefsController.getRegionId();
-    debugPrint('city id   ===> $selectedCityId');
-    debugPrint('region id ===> $selectedRegionId');
-    debugPrint('length ===> ${citiesController.cities.length}');
-    debugPrint('length ===> ${regionsController.regions1.length}');
-    selectedCity = citiesController.cities.isEmpty
-        ? ''
-        : citiesController.cities
-        .firstWhere(
-          (city) => selectedCityId == city.id,
-      orElse: () => City(id: 0, name: ''), //fallback city
-    ).name;
-
-    selectedRegion = selectedCityId == 1
-        ? regionsController.regions1.isEmpty
-        ? ''
-        : regionsController.regions1
-        .firstWhere(
-          (region) => selectedRegionId == region.id,
-      orElse: () => Region(id: 0, name: ''), //fallback region
-    ).name
-        : regionsController.regions2.isEmpty
-        ? ''
-        : regionsController.regions2
-        .firstWhere(
-          (region) => selectedRegionId == region.id,
-      orElse: () => Region(id: 0, name: ''), //fallback region
-    ).name;
-
-    debugPrint('city    ===> $selectedCity');
-    debugPrint('Region  ===> $selectedRegion');
-  }
 
 }

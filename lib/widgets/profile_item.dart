@@ -28,7 +28,7 @@ Widget ProfileItem(BuildContext context, {
           const Spacer(),
           Text(title),
           const SizedBox(width: 10.0),
-          Image.asset(iconUrl, scale: 2.0, color: HomeCareTheme.primaryColorBoldExtra),
+          Image.asset(iconUrl, scale: iconUrl == 'assets/icons/insurance.png' ? 2.5 : 2.0, color: HomeCareTheme.primaryColorBoldExtra),
         ],
       ),
     ),

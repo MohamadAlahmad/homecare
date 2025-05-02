@@ -30,7 +30,9 @@ class ServiceModal extends StatefulWidget {
 }
 
 class _ServiceModalState extends State<ServiceModal> {
-  bool hasError = false;
+  bool _hasError = false;
+  String baseUrl = 'http://185.158.94.162:8080/';
+  String completeImageUrl = '';
 
   @override
   Widget build(BuildContext context) {
@@ -40,121 +42,191 @@ class _ServiceModalState extends State<ServiceModal> {
         textDirection: TextDirection.rtl,
         child: Stack(
           children: [
-            Container(
-              height: widget.isNutrition ? HomeCareSize.height(context) * 0.5 : HomeCareSize.height(context) * 0.3,
-              padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.zero,
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(
-                      height: 90.0,
-                      child: Row(
-                        children: [
-                          Container(
-                            margin: const EdgeInsets.only(left: 10.0),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(15.0),
-                              image: DecorationImage(
-                                image: widget.imagePath.isEmpty
-                                    ? const AssetImage('assets/images/temp_image.png') as ImageProvider
-                                    : (widget.imagePath.startsWith('http')
-                                    ? NetworkImage(widget.imagePath)
-                                    : const AssetImage('assets/images/temp_image.png') as ImageProvider),
-                                fit: BoxFit.cover,
-                                onError: (error, stackTrace) {
-                                  setState(() {
-                                    hasError = true;
-                                  });
-                                },
-                              ),
-                            ),
-                            height: 90.0,
-                            width: 90.0,
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 15.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  widget.title,
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
-                                ),
-                                Row(
-                                  children: [
-                                    const Text('الفئة : ', style: TextStyle(color: HomeCareTheme.primaryColor, fontSize: 14.0)),
-                                    Text(widget.category, style: TextStyle(color: Colors.black, fontSize: 14.0)),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 10.0),
-                    Text(
-                      widget.isNutrition ? 'الوصف :' : 'وصف الخدمة :',
-                      style: const TextStyle(fontSize: 16.0, color: Colors.grey, decoration: TextDecoration.underline),
-                    ),
-                    Text(widget.description),
-                    const SizedBox(height: 10.0),
-                    if(!widget.isNutrition) Text(
-                      'شروط تقديم الخدمة :',
-                      style: const TextStyle(fontSize: 16.0, color: Colors.grey, decoration: TextDecoration.underline),
-                    ),
-                    Text(widget.preConditions),
-                  ],
-                ),
-              ),
-            ),
-            if(!widget.isNutrition) Positioned(
-              left: 0.0,
-              right: 0.0,
-              bottom: 0.0,
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(15.0),
-                    height: HomeCareSize.height(context) * 0.2,
-                    color: Colors.white,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'السعر',
-                              style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14.0),
-                            ),
-                            Text(
-                              '${widget.price} ل.س',
-                              style: const TextStyle(color: HomeCareTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 16.0),
-                            ),
-                          ],
-                        ),
-                        CustomButton(
-                          onPressed: widget.onPressed,
-                          title: const Text(
-                            'حجز الخدمة',
-                            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                          ),
-                          backgroundColor: HomeCareTheme.primaryColor,
-                          width: HomeCareSize.width(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildContent(context),
+            if (!widget.isNutrition) _buildBottomActionBar(context),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    return Container(
+      height: widget.isNutrition ? HomeCareSize.height(context) * 0.5 : HomeCareSize.height(context) * 0.3,
+      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 10.0),
+      child: SingleChildScrollView(
+        padding: EdgeInsets.zero,
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeaderRow(),
+            const SizedBox(height: 10.0),
+            _buildDescriptionSection(),
+            const SizedBox(height: 10.0),
+            if (!widget.isNutrition) _buildPreConditionsSection(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderRow() {
+    return SizedBox(
+      height: 90.0,
+      child: Row(
+        children: [
+          _buildProfileImage(),
+          const SizedBox(width: 10.0),
+          _buildTitleAndCategory(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileImage() {
+    return _buildImageDecoration();
+  }
+
+  Container _buildImageDecoration() {
+    completeImageUrl = '$baseUrl${widget.imagePath}';
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20.0),
+        // boxShadow: const [BoxShadow(blurRadius: 1.0, spreadRadius: 1.0, color: HomeCareTheme.secondaryColor, offset: Offset(2.0, 2.0))],
+      ),
+      height: HomeCareSize.height(context),
+      width: 90.0,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.0),
+        child: _hasError || widget.imagePath.isEmpty
+            ? Image.asset(
+          'assets/images/temp_image.png',
+          fit: BoxFit.cover,
+        )
+            : Image.network(
+          completeImageUrl,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) {
+            if (!_hasError) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _hasError = true;
+                  });
+                }
+              });
+            }
+            return Image.asset(
+              'assets/images/temp_image.png',
+              fit: BoxFit.cover,
+            );
+          },
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return Center(
+              child: CircularProgressIndicator(
+                color: HomeCareTheme.primaryColor,
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                    loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTitleAndCategory() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 15.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            widget.title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16.0),
+          ),
+          Row(
+            children: [
+              const Text('الفئة : ', style: TextStyle(color: HomeCareTheme.primaryColor, fontSize: 14.0)),
+              Text(widget.category, style: const TextStyle(color: Colors.black, fontSize: 14.0)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDescriptionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          widget.isNutrition ? 'الوصف :' : 'وصف الخدمة :',
+          style: const TextStyle(fontSize: 16.0, color: Colors.grey, decoration: TextDecoration.underline),
+        ),
+        Text(widget.description),
+      ],
+    );
+  }
+
+  Widget _buildPreConditionsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'شروط تقديم الخدمة :',
+          style: const TextStyle(fontSize: 16.0, color: Colors.grey, decoration: TextDecoration.underline),
+        ),
+        Text(widget.preConditions),
+      ],
+    );
+  }
+
+  Widget _buildBottomActionBar(BuildContext context) {
+    return Positioned(
+      left: 0.0,
+      right: 0.0,
+      bottom: 0.0,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(15.0),
+            height: HomeCareSize.height(context) * 0.2,
+            color: Colors.white,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'السعر',
+                      style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 14.0),
+                    ),
+                    Text(
+                      '${widget.price} ل.س',
+                      style: const TextStyle(color: HomeCareTheme.primaryColor, fontWeight: FontWeight.bold, fontSize: 16.0),
+                    ),
+                  ],
+                ),
+                CustomButton(
+                  onPressed: widget.onPressed,
+                  title: const Text(
+                    'حجز الخدمة',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                  backgroundColor: HomeCareTheme.primaryColor,
+                  width: HomeCareSize.width(context),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

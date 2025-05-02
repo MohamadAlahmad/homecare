@@ -13,13 +13,14 @@ import 'package:homecare/mvc/model/api/city.dart';
 import 'package:homecare/mvc/model/api/nurse.dart';
 import 'package:homecare/mvc/model/api/package.dart';
 import 'package:homecare/mvc/model/api/region.dart';
+import 'package:homecare/mvc/view/patient/profile_pages/my_profile_screen.dart';
 import 'package:homecare/widgets/buttons.dart';
 import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
 import 'package:homecare/widgets/custom_dropdown.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/expanded_list.dart';
 import 'package:homecare/widgets/header_widget.dart';
-import 'package:homecare/widgets/nurse/available_nurse_card.dart';
+import 'package:homecare/widgets/custom_item_card.dart';
 import 'package:homecare/widgets/patient/package_details_card.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -32,11 +33,11 @@ class PackageBookingScreen extends StatefulWidget {
 }
 
 class _PackageBookingScreenState extends State<PackageBookingScreen> {
-  DateTime focusedDay = DateTime.now(); // Keeps track of the current month
-  DateTime firstDay = DateTime.now(); // Allow selection from today
-  DateTime lastDay = DateTime(2100); // Allow selection up to an undetermined future date
+  DateTime focusedDay = DateTime.now();
+  DateTime firstDay = DateTime.now();
+  DateTime lastDay = DateTime(2100);
 
-  DateTime? selectedDay; // Holds the selected day (only one day allowed)
+  DateTime? selectedDay;
 
   final List<String> timeValues = [
     for (int i = 10; i <= 23; i++) ...[
@@ -351,11 +352,10 @@ class _PackageBookingScreenState extends State<PackageBookingScreen> {
                       debugPrint(selectedNurseId.toString());
                     });
                   },
-                  child: AvailableNurseCard(
+                  child: CustomItemCard(
                     id: nurse.id,
-                    firstName: nurse.firstName,
-                    lastName: nurse.lastName,
-                    rate: nurse.rate,
+                    title: '${nurse.firstName} ${nurse.lastName}',
+                    value: nurse.rate,
                     isSelected: nurse.isSelected,
                   ),
                 );
@@ -475,7 +475,7 @@ class _PackageBookingScreenState extends State<PackageBookingScreen> {
     loading.value = false;
     if(sharedPrefsController.sessionTerminated()) {
       HomeCareStyle.showReLoginDialog(context);
-    } else if(result) {
+    } else if(result == 'true') {
       HomeCareStyle.showSnackBar(
         context,
         content: 'تم الحجز بنجاح',
@@ -483,7 +483,22 @@ class _PackageBookingScreenState extends State<PackageBookingScreen> {
         success: true,
       );
       Navigator.pop(context);
-    } else {
+    } else if(result == 'enter-info') {
+      HomeCareStyle.showInfoRequiredDialog(
+        context,
+        title: 'يجب عليك إدخال معلوماتك الشخصية أولاً',
+        buttonTitle: 'نعم',
+        content: 'هل تريد إدخال المعلومات الشخصية لإكمال الحجز ؟',
+        onYesPressed: () async {
+          Navigator.push(context, MaterialPageRoute(builder: (context) =>
+              MyProfileScreen(
+                youDidNotEnterYourInfo: true,
+                forBookingThroughPackage: true,
+              ),
+          ));
+        },
+      );
+    } else if(result == 'false') {
       HomeCareStyle.showSnackBar(
         context,
         content: sharedPrefsController.getMSG(),
@@ -505,4 +520,5 @@ class _PackageBookingScreenState extends State<PackageBookingScreen> {
   bool showCityMsg = false;
   bool showRegionMsg = false;
   bool showAddressMsg = false;
+
 }

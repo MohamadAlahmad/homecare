@@ -10,6 +10,7 @@ import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/widgets/login_item.dart';
+import 'package:homecare/widgets/profile_image_widget.dart';
 import 'package:homecare/widgets/profile_item.dart';
 
 class ProfileNurseScreen extends StatefulWidget {
@@ -40,14 +41,18 @@ class _ProfileNurseScreenState extends State<ProfileNurseScreen> {
                   physics: const BouncingScrollPhysics(),
                   child: Column(
                     children: [
-                      const SizedBox(height: 25.0),
-                      const CircleAvatar(radius: 75.0, backgroundColor: HomeCareTheme.secondaryColor),
+                      //const SizedBox(height: 25.0),
+                      ProfileImageWidget(
+                        sharedPrefsController: sharedPrefsController,
+                        height: 120.0,
+                        width: 120.0,
+                      ),
                       Padding(
                         padding: EdgeInsets.all(10.0),
                         child: Text('${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}', style: TextStyle(fontSize: 18.0)),
                       ),
                       Container(
-                        height: 330.0,
+                        height: 400.0,
                         padding: const EdgeInsets.all(10.0),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20.0),

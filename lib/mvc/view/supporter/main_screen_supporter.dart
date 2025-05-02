@@ -59,7 +59,7 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
       setState(() {
         patients.addAll(newPatients);
         hasMorePatients = newPatients.isNotEmpty;
-        isInitialLoadingPatients = false; // Initial loading is done
+        isInitialLoadingPatients = false;
       });
     }
   }
@@ -163,8 +163,8 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
         setState(() {
           patients.clear();
           patientsPage = 1;
-          isInitialLoadingPatients = true; // Show loading indicator
-          getPatients(); // Refresh data
+          isInitialLoadingPatients = true;
+          getPatients();
         });
       },
       child: Column(
@@ -203,7 +203,7 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
                       context,
                       title: 'تأكيد الحذف',
                       buttonTitle: 'حذف',
-                      content: 'هل أنت متأكد أنك تريد حذف المريض ؟',
+                      content: Text('هل أنت متأكد أنك تريد حذف المريض ؟'),
                       onYesPressed: () async {
                         var result = await ConnectionController.deletePatientBySupporter(
                           token: sharedPrefsController.getToken(),
@@ -212,10 +212,10 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
                         if (result) {
                           // Reload patients if deletion was successful
                           setState(() {
-                            patients.clear(); // Clear current list
+                            patients.clear();
                             patientsPage = 1;
-                            isInitialLoadingPatients = true; // Show loading indicator
-                            getPatients(); // Refresh data
+                            isInitialLoadingPatients = true;
+                            getPatients();
                           });
                           HomeCareStyle.showSnackBar(
                             context,
@@ -251,17 +251,27 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
       buttonTitle: 'نعم',
       content: 'هل تريد تسجيل الخروج فعلاً من حسابك في التطبيق ؟',
       onYesPressed: () async {
-        var result = await ConnectionController.logout(token: sharedPrefsController.getToken());
-        if(result) {
-          sharedPrefsController.clearData();
-          GlobalPageController.registerController = PageController(initialPage: 0);
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
-        } else {
+        try {
+          var result = await ConnectionController.logout(token: sharedPrefsController.getToken());
+
+          if (result) {
+            sharedPrefsController.clearData();
+            GlobalPageController.registerController = PageController(initialPage: 0);
+            Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
+          } else {
+            Navigator.pop(context);
+            HomeCareStyle.showSnackBar(
+              context,
+              content: 'فشل تسجيل الخروج',
+              icon: CupertinoIcons.exclamationmark_circle_fill,
+            );
+          }
+        } catch (e) {
           Navigator.pop(context);
           HomeCareStyle.showSnackBar(
             context,
-            content: 'فشل تسجيل الخروج',
-            icon: CupertinoIcons.exclamationmark_circle_fill,
+            content: 'لا يوجد اتصال بالإنترنت',
+            icon: CupertinoIcons.wifi_exclamationmark,
           );
         }
       },

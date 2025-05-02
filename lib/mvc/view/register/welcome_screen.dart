@@ -36,9 +36,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     onPressed: () {
                       Navigator.push(context, MaterialPageRoute(builder: (context) => PrivacyPolicyScreen()));
                     },
-                    child: const Text('سياسة الخصوصية والاستخدام', style: TextStyle(decoration: TextDecoration.underline, fontSize: 16.0, color: Colors.blue)),
+                    child: const Text('سياسة الخصوصية والاستخدام', style: TextStyle(decoration: TextDecoration.underline, fontSize: 14.0, color: Colors.blue)),
                   ),
-                  Text('الموافقة على ', style: TextStyle(fontSize: 16.0, color: Colors.black)),
+                  Text('الموافقة على ', style: TextStyle(fontSize: 14.0, color: Colors.black)),
                   Checkbox(
                     value: agree,
                     activeColor: HomeCareTheme.primaryColor,

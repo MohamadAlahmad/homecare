@@ -1,7 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:get/get.dart' as GetX;
+import 'package:homecare/mvc/model/api/lab_model.dart';
+import 'package:homecare/mvc/model/api/lab_test_model.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
+import 'package:http_parser/http_parser.dart';
 import 'package:homecare/core/utils/api.dart';
 import 'package:homecare/core/utils/http_helper.dart';
 import 'package:homecare/mvc/controller/cities_controller.dart';
@@ -93,6 +99,7 @@ class ConnectionController {
       },
       onUnauthorizedAdditional: null,
       onGone: () => 'expired',
+      onBadRequest: () => 'failed',
       responseBody: response['body'],
     );
   }
@@ -270,6 +277,7 @@ class ConnectionController {
       // لابد من كتابتها (الـ onBadRequest) منشان يتحقق الشرط بالـ HttpHelper ويفوت علي بلوك الـ 400
       // وهكذا بالنسبة لباقي التوابع ...
       onBadRequest: () => false,
+      onParamNotFound: () => false,
       onGone: null,
       responseBody: response['body'],
     );
@@ -309,6 +317,13 @@ class ConnectionController {
           prefsController.saveLatitude(latitude: result['data']['geographicCoordinates']['latitude']);
           prefsController.saveLongitude(longitude: result['data']['geographicCoordinates']['longitude']);
         }
+
+        if (result['data']['personalImage'] != null) {
+          String imageUrl = '${HomeCareApi.baseUrl}/${result['data']['personalImage']['url']}';
+          prefsController.saveProfileImageUrl(imageUrl: imageUrl);
+          prefsController.saveIdOfProfileImage(id: result['data']['personalImage']['id']);
+        }
+
         return;
       },
       onUnauthorizedAdditional: null,
@@ -434,6 +449,10 @@ class ConnectionController {
       },
     );
 
+    if (response['Message'] == 'حدث خطأ أثناء الاتصال') {
+      prefsController.saveMSG(message: 'حدث خطأ أثناء الاتصال !!');
+    }
+
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
@@ -444,7 +463,10 @@ class ConnectionController {
         return patients;
       },
       onUnauthorizedAdditional: () => [],
-      onGone: null,
+      onGone: () => [],
+      onParamNotFound: () => [],
+      onBadRequest: () => [],
+      onPreconditionRequired: () => [],
       responseBody: response['body'],
     );
   }
@@ -464,9 +486,8 @@ class ConnectionController {
       onSuccess: () {
         List data = response['body']['data'];
         List<City> cities = data.map((item) => City.fromJson(item)).toList();
-        CitiesController citiesController = Get.find();
+        CitiesController citiesController = GetX.Get.find();
         citiesController.saveCities(cities);
-        debugPrint(' 200 OK ---------- Get Cities');
       },
       onUnauthorizedAdditional: null,
       onGone: null,
@@ -489,9 +510,8 @@ class ConnectionController {
       onSuccess: () {
         List data = response['body']['data'];
         List<Region> regions = data.map((item) => Region.fromJson(item)).toList();
-        RegionsController regionsController = Get.find();
+        RegionsController regionsController = GetX.Get.find();
         regionsController.saveRegions1(regions);
-        debugPrint(' 200 OK ---------- Get Regions 1');
       },
       onUnauthorizedAdditional: null,
       onGone: null,
@@ -514,9 +534,8 @@ class ConnectionController {
       onSuccess: () {
         List data = response['body']['data'];
         List<Region> regions = data.map((item) => Region.fromJson(item)).toList();
-        RegionsController regionsController = Get.find();
+        RegionsController regionsController = GetX.Get.find();
         regionsController.saveRegions2(regions);
-        debugPrint(' 200 OK ---------- Update Regions 2');
       },
       onUnauthorizedAdditional: null,
       onGone: null,
@@ -545,9 +564,6 @@ class ConnectionController {
         List<MedicalService> services = (result['items'] as List).map((item) {
           return MedicalService.fromJson(item);
         }).toList();
-        for (var x in services) {
-          debugPrint(x.name);
-        }
         return services;
       },
       onUnauthorizedAdditional: () => [],
@@ -565,12 +581,17 @@ class ConnectionController {
     required String alternativePhoneNumber,
     required int gender,
     required int? personalImageId,
-    required String? attachmentIds,
+    required List<int?> attachmentIds,
     required double latitude,
     required double longitude,
     required int regionId,
     required String details,
   }) async {
+    attachmentIds = attachmentIds.where((id) => id != -1).toList();
+    print('Update Method');
+    for(int i = 0; i< attachmentIds.length; i++) {
+      print('[${attachmentIds[i]}] -');
+    }
     Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.updateNursePersonalInfo);
     var body = jsonEncode({
       'firstName': firstName,
@@ -588,6 +609,7 @@ class ConnectionController {
         'regionId': regionId.toString(),
         'details': details,
       },
+      'attachmentIds': attachmentIds,
     });
 
     var response = await HttpHelper.httpRequest(
@@ -603,11 +625,11 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        //debugPrint(response['body']);
         return true;
       },
       onUnauthorizedAdditional: () => false,
       onBadRequest: () => false,
+      onParamNotFound: () => false,
       onGone: null,
       responseBody: response['body'],
     );
@@ -630,26 +652,74 @@ class ConnectionController {
       onSuccess: () {
         var result = response['body'];
         SharedPrefsController controller = prefsController;
+
         controller.saveFirstName(firstName: result['data']['firstName']);
         controller.saveLastName(lastName: result['data']['lastName']);
         controller.saveGender(gender: result['data']['gender']);
         controller.saveRate(rate: result['data']['rate']);
         String fullPhone = result['data']['phoneNumber'];
         controller.saveMobileNumber(mobile: fullPhone);
+
         String fullAltPhone = result['data']['alternativePhoneNumber'].toString();
         String altPhone = fullAltPhone != 'null' ? fullAltPhone.substring(3) : '';
         controller.saveAltMobileNumber(altMobile: altPhone);
-        controller.saveBirthDate(date: result['data']['dateOfBirth'] != null ? result['data']['dateOfBirth'].toString() : '');
+
+        controller.saveBirthDate(
+          date: result['data']['dateOfBirth'] != null
+              ? result['data']['dateOfBirth'].toString()
+              : '',
+        );
+
         if (result['data']['geocodedAddress'] != null) {
           controller.saveAddressDetails(details: result['data']['geocodedAddress']['details'].toString());
           controller.saveCityId(cityId: result['data']['geocodedAddress']['governorateDto']['id']);
           controller.saveRegionId(regionId: result['data']['geocodedAddress']['regionDto']['id']);
         }
+
         if (result['data']['geographicCoordinates'] != null) {
           controller.saveLatitude(latitude: result['data']['geographicCoordinates']['latitude']);
           controller.saveLongitude(longitude: result['data']['geographicCoordinates']['longitude']);
         }
-        debugPrint(' 200 OK ---------- Update Nurse Info');
+
+        if (result['data']['personalImage'] != null) {
+          String imageUrl = '${HomeCareApi.baseUrl}/${result['data']['personalImage']['url']}';
+          prefsController.saveProfileImageUrl(imageUrl: imageUrl);
+          prefsController.saveIdOfProfileImage(id: result['data']['personalImage']['id']);
+        }
+
+        List<String> attachmentUrls = [];
+        List<int> attachmentIds = [];
+
+        if (result['data']['attachments'] != null) {
+          List<dynamic> attachments = result['data']['attachments'];
+          for (var attachment in attachments) {
+            attachmentUrls.add(attachment['url']);
+            attachmentIds.add(attachment['id']);
+          }
+        }
+
+        // Fill to length 6
+        while (attachmentUrls.length < 6) {
+          attachmentUrls.add('');
+        }
+        while (attachmentIds.length < 6) {
+          attachmentIds.add(-1);
+        }
+
+        // Save the lists
+        controller.saveListOfAttachmentsUrls(urls: attachmentUrls);
+        controller.saveListOfAttachmentsIds(ids: attachmentIds);
+
+        // Print for debugging
+        print('Attachment URLs (length: ${attachmentUrls.length}):');
+        for (int i = 0; i < attachmentUrls.length; i++) {
+          print('[$i] ${attachmentUrls[i]}');
+        }
+
+        print('Attachment IDs (length: ${attachmentIds.length}):');
+        for (int i = 0; i < attachmentIds.length; i++) {
+          print('[$i] ${attachmentIds[i]}');
+        }
       },
       onUnauthorizedAdditional: null,
       onGone: null,
@@ -691,20 +761,26 @@ class ConnectionController {
     required List<String> visitsDates,
     required int? visitDurationInHours,
     required String token,
-    int? regionId,
-    String? details,
+    required int regionId,
+    required String details,
+    required int labId,
+    required List<int> labTestsIds,
   }) async {
     Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.bookService);
     var body = jsonEncode({
       'serviceId': serviceId,
       if (nurseId != -1) 'nurseId': nurseId,
       'visitsDates': visitsDates,
-      'visitDurationInHours': visitDurationInHours,
-      if (regionId != null && details != null)
+      if (visitDurationInHours != 0) 'visitDurationInHours': visitDurationInHours,
+      if (regionId !=0 && details.isNotEmpty)
         'geocodedAddress': {
           'regionId': regionId.toString(),
           'details': details,
-        }
+        },
+      if (labId != -1)
+        'labId': labId,
+      if (labTestsIds.isNotEmpty)
+        'labTestsIds': labTestsIds,
     });
 
     var response = await HttpHelper.httpRequest(
@@ -721,7 +797,6 @@ class ConnectionController {
       statusCode: response['statusCode'],
       onSuccess: () {
         debugPrint("HTTP Status Code: ${response['statusCode']}");
-        //debugPrint(response['body']);
         return 'true';
       },
       onPreconditionRequired: () {
@@ -729,10 +804,11 @@ class ConnectionController {
       },
       onUnauthorizedAdditional: () => 'false',
       responseBody: response['body'],
+      onBadRequest: () => 'false',
     );
   }
 
-  static Future<bool> bookServiceThroughPackage({
+  static Future<String> bookServiceThroughPackage({
     required int packageId,
     required int nurseId,
     required String firstVisitsDate,
@@ -766,12 +842,15 @@ class ConnectionController {
       statusCode: response['statusCode'],
       onSuccess: () {
         debugPrint("HTTP Status Code: ${response['statusCode']}");
-        //debugPrint(response['body']);
-        return true;
+        return 'true';
       },
-      onUnauthorizedAdditional: () => false,
+      onPreconditionRequired: () {
+        return 'enter-info';
+      },
+      onUnauthorizedAdditional: () => 'false',
       onGone: null,
       responseBody: response['body'],
+      onBadRequest: () => 'false',
     );
   }
 
@@ -792,7 +871,6 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        debugPrint('Accepted Successfully !!');
         return true;
       },
       onUnauthorizedAdditional: () => false,
@@ -818,7 +896,6 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        debugPrint('Cancelled Successfully !!');
         return true;
       },
       onUnauthorizedAdditional: () => false,
@@ -846,7 +923,6 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        debugPrint('Cancelled Successfully !!');
         return true;
       },
       onUnauthorizedAdditional: () => false,
@@ -1082,7 +1158,11 @@ class ConnectionController {
           controller.saveLatitude(latitude: result['data']['geographicCoordinates']['latitude']);
           controller.saveLongitude(longitude: result['data']['geographicCoordinates']['longitude']);
         }
-        debugPrint(' 200 OK ---------- Update User Info');
+        if (result['data']['personalImage'] != null) {
+          String imageUrl = '${HomeCareApi.baseUrl}/${result['data']['personalImage']['url']}';
+          prefsController.saveProfileImageUrl(imageUrl: imageUrl);
+          prefsController.saveIdOfProfileImage(id: result['data']['personalImage']['id']);
+        }
       },
       onUnauthorizedAdditional: null,
       onGone: null,
@@ -1132,17 +1212,17 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        //debugPrint(response['body']);
         return true;
       },
       onUnauthorizedAdditional: () => false,
       onBadRequest: () => false,
+      onParamNotFound: () => false,
       onGone: null,
       responseBody: response['body'],
     );
   }
 
-  static Future<bool> addPatientBySupporter({
+  static Future<String> addPatientBySupporter({
     required String firstName,
     required String lastName,
     required String token,
@@ -1151,7 +1231,9 @@ class ConnectionController {
     required int suggestedNurseId,
     required String operationType,
   }) async {
+
     Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.addPatientBySupporter);
+
     var body = jsonEncode({
       'firstName': firstName,
       'lastName': lastName,
@@ -1174,14 +1256,14 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        //debugPrint(response['body']);
-        return true;
+        return 'true';
       },
-      onUnauthorizedAdditional: () => false,
+      onUnauthorizedAdditional: () => 'false',
       onBadRequest: () {
         debugPrint("Bad request: ${response['body']['message']}");
-        return false;
+        return 'false';
       },
+      onPreconditionRequired: () => 'complete-info',
       onGone: null,
       responseBody: response['body'],
     );
@@ -1215,7 +1297,6 @@ class ConnectionController {
           }).toList();
           return patients;
         } else {
-          debugPrint('Error: "items" key is missing in the API response');
           return [];
         }
       },
@@ -1236,11 +1317,11 @@ class ConnectionController {
     required String descriptionAdditional,
     required num priceAdditional,
     required int sessionId,
+    required List<int> attachmentIds,
     required String token,
   }) async {
     Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.fillSessionForm)
         .replace(queryParameters: {'sessionId': sessionId.toString()});
-
     var body = jsonEncode({
       "bioMarkers": [
         {"bioMarkerType": 1, "value": num.parse(bioMarker1Value)},
@@ -1249,6 +1330,51 @@ class ConnectionController {
         {"bioMarkerType": 4, "value": num.parse(bioMarker4Value)},
         {"bioMarkerType": 5, "value": num.parse(bioMarker5Value)},
       ],
+      "notes": notes,
+      "basicServicePrice": basicServicePrice,
+      if(descriptionAdditional.isNotEmpty && priceAdditional != 0) "additionalFees": {
+        "description": descriptionAdditional,
+        "price": priceAdditional
+      },
+      "finalPrice": basicServicePrice + priceAdditional,
+      "attachmentIds": attachmentIds,
+    });
+
+    var response = await HttpHelper.httpRequest(
+      url: url,
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: body,
+    );
+
+    return await HttpHelper.handleResponse(
+      statusCode: response['statusCode'],
+      onSuccess: () {
+        return true;
+      },
+      onUnauthorizedAdditional: () => false,
+      onGone: null,
+      responseBody: response['body'],
+      onBadRequest: () => false,
+    );
+  }
+
+  static Future<bool> fillLabSessionForm({
+    required String notes,
+    required num basicServicePrice,
+    required String descriptionAdditional,
+    required num priceAdditional,
+    required int sessionId,
+    required List<int> attachmentIds,
+    required String token,
+  }) async {
+    Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.fillLabSessionForm)
+        .replace(queryParameters: {'sessionId': sessionId.toString()});
+
+    var body = jsonEncode({
       "notes": notes,
       "basicServicePrice": basicServicePrice,
       "additionalFees": {
@@ -1271,12 +1397,12 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        debugPrint('Success Fill Form');
         return true;
       },
       onUnauthorizedAdditional: () => false,
       onGone: null,
       responseBody: response['body'],
+      onBadRequest: () => false,
     );
   }
 
@@ -1308,6 +1434,7 @@ class ConnectionController {
         return records;
       },
       onUnauthorizedAdditional: () => [],
+      onPreconditionRequired: () => [],
       onGone: null,
       responseBody: response['body'],
     );
@@ -1343,7 +1470,6 @@ class ConnectionController {
   static Future<HealthRecordModel?> getSessionById({required String token, required int sessionId}) async {
     Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.getSessionById)
         .replace(queryParameters: {'sessionId': sessionId.toString()});
-
     var response = await HttpHelper.httpRequest(
       url: url,
       method: 'GET',
@@ -1381,7 +1507,6 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        debugPrint('Deleted Successfully !!');
         return true;
       },
       onUnauthorizedAdditional: () => false,
@@ -1410,14 +1535,12 @@ class ConnectionController {
         if (result['data'] != null) {
           final sessionDetails = result['data']['sesssionDetails'];
           if (sessionDetails != null) {
-            return PreviousCase.fromJson(sessionDetails);
+            return PreviousCase.fromJson(sessionDetails, result['data']['visitDate']);
           } else {
-            debugPrint('Session details not found');
             return null;
           }
         } else {
           prefsController.saveMSG(message: 'لا يوجد بيانات');
-          debugPrint('Data is empty or null');
           return null;
         }
       },
@@ -1506,7 +1629,6 @@ class ConnectionController {
   }
 
   static Future<List<NotificationModel>> getNotifications({required String token, int pageNumber = 1}) async {
-    debugPrint('TOKEN NOW :=> $token');
     Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.getNotifications);
 
     var response = await HttpHelper.httpRequest(
@@ -1547,7 +1669,6 @@ class ConnectionController {
   static Future<bool> deletePatient({required String token, required int id}) async {
     Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.deletePatient}')
         .replace(queryParameters: {'patientId': id.toString()});
-
     var response = await HttpHelper.httpRequest(
       url: url,
       method: 'DELETE',
@@ -1560,10 +1681,163 @@ class ConnectionController {
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        debugPrint('Deleted Successfully !!');
         return true;
       },
       onUnauthorizedAdditional: () => false,
+      onGone: null,
+      responseBody: response['body'],
+    );
+  }
+
+  static Future<int> uploadFile({
+    required int folderName,
+    required String token,
+    String? filePath,
+  }) async {
+    var request = http.MultipartRequest(
+      'POST',
+      Uri.parse(HomeCareApi.baseUrl + HomeCareApi.uploadFile),
+    );
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['FolderName'] = folderName.toString();
+
+    if (filePath != null && filePath.isNotEmpty) {
+      File file = File(filePath);
+      if (await file.exists()) {
+        print('File size: ${await file.length()} bytes');
+
+        // Determine the content type based on the file extension
+        String contentType;
+        String fileExtension = path.extension(filePath).toLowerCase();
+        switch (fileExtension) {
+          case '.jpg':
+          case '.jpeg':
+            contentType = 'image/jpeg';
+            break;
+          case '.png':
+            contentType = 'image/png';
+            break;
+          case '.pdf':
+            contentType = 'application/pdf';
+            break;
+          default:
+            print('!!!!!!!!!! Unsupported file type !!!!!!!!!!');
+            return -1;
+        }
+
+        request.files.add(await http.MultipartFile.fromPath(
+          'File',
+          filePath,
+          filename: path.basename(filePath),
+          contentType: MediaType.parse(contentType),
+        ));
+      } else {
+        return -1;
+      }
+    }
+    try {
+      var response = await request.send();
+      if (response.statusCode == 200) {
+        final responseString = await response.stream.bytesToString();
+        final json = jsonDecode(responseString);
+        String imageUrl = '${HomeCareApi.baseUrl}/${json['url']}';
+        if (folderName ==1 && json['id'] != null) {
+          prefsController.saveIdOfProfileImage(id: json['id']);
+          prefsController.saveProfileImageUrl(imageUrl: imageUrl);
+        }
+        print('Success Upload Profile Image ✅✅✅');
+        return json['id'];
+      } else {
+        final responseString = await response.stream.bytesToString();
+        final json = jsonDecode(responseString);
+        final message = json['message'] ?? 'Unknown error';
+        return -1;
+      }
+    } catch (e) {
+      print('Error uploading file: $e');
+      return -1;
+    }
+  }
+
+  static Future<bool> deleteFile({required String token, required int id}) async {
+    Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.deleteFile}/$id');
+
+    print('Delete File Full Url : $url');
+    var response = await HttpHelper.httpRequest(
+      url: url,
+      method: 'DELETE',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    print('Delete File Full Url 2 : $url');
+    return await HttpHelper.handleResponse(
+      statusCode: response['statusCode'],
+      onSuccess: () {
+        print('Delete File Full Url 3 : $url');
+        print('√√√√√√√√√√√√√√√√√√√√√√√√√ ');
+        return true;
+      },
+      onUnauthorizedAdditional: () => false,
+      onGone: null,
+      responseBody: response['body'],
+    );
+  }
+
+  static Future<List<LabTestModel>> getLAbTests({required String token}) async {
+    Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.getLabTests}');
+
+    var response = await HttpHelper.httpRequest(
+      url: url,
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({}),
+    );
+
+    return await HttpHelper.handleResponse(
+      statusCode: response['statusCode'],
+      onSuccess: () {
+        var result = response['body'];
+        List<LabTestModel> labTests = (result['items'] as List).map((item) {
+          return LabTestModel.fromJson(item);
+        }).toList();
+        return labTests;
+      },
+      onUnauthorizedAdditional: () => [],
+      onGone: null,
+      responseBody: response['body'],
+    );
+  }
+
+  static Future<List<LabModel>> getLaboratories({required String token}) async {
+    Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.getLabs}');
+
+    var response = await HttpHelper.httpRequest(
+      url: url,
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode({}),
+    );
+
+    return await HttpHelper.handleResponse(
+      statusCode: response['statusCode'],
+      onSuccess: () {
+        var result = response['body'];
+        List<LabModel> labs = (result['items'] as List).map((item) {
+          return LabModel.fromJson(item);
+        }).toList();
+        return labs;
+      },
+      onUnauthorizedAdditional: () => [],
       onGone: null,
       responseBody: response['body'],
     );

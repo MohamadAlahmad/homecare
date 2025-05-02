@@ -43,7 +43,7 @@ class _VisitDetailsPatientScreenState extends State<VisitDetailsPatientScreen> {
                         BriefDetailsCard(
                           patientName: 'patientName',
                           nurseName: 'nurseName',
-                          date: 'date',
+                          date: DateTime.now(),
                           location: 'location',
                         ),
                         Padding(

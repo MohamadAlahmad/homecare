@@ -6,6 +6,7 @@ import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/health_record_model.dart';
 import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
+import 'package:homecare/widgets/custom_item_card.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/menu_text.dart';
@@ -25,6 +26,7 @@ class HealthRecordDetailsScreen extends StatefulWidget {
 class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
   SharedPrefsController sharedPrefsController = SharedPrefsController();
   late Future<HealthRecordModel?> futureHealthRecord;
+  ScrollController scrollController = ScrollController();
 
   Future<HealthRecordModel?> getHealthRecordDetails({required int id}) async {
     return await ConnectionController.getSessionById(
@@ -84,7 +86,7 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                     details: healthRecord.geocodedAddress!.details,
                     hours: healthRecord.visitDurationInHours.toString(),
                   ),
-                  VitalSignCard(
+                  if(healthRecord.labTests.isEmpty) VitalSignCard(
                     context,
                     title: 'ضغط الدم',
                     controller: TextEditingController(text: healthRecord.visitCase!.bloodPressureFirstValue.toString()),
@@ -93,32 +95,32 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                     forBloodPressure: true,
                     forHealthRecord: true,
                   ),
-                  VitalSignCard(
+                  if(healthRecord.labTests.isEmpty) VitalSignCard(
                     context,
                     title: 'سكر الدم',
                     controller: TextEditingController(text: healthRecord.visitCase!.bloodSugar.toString()),
                     enabled: false,
                     forHealthRecord: true,
                   ),
-                  VitalSignCard(
+                  if(healthRecord.labTests.isEmpty) VitalSignCard(
                     context,
                     title: 'نبضات القلب',
                     controller: TextEditingController(text: healthRecord.visitCase!.heartRate.toString()),
                     enabled: false,
                     forHealthRecord: true,
                   ),
-                  VitalSignCard(
+                  if(healthRecord.labTests.isEmpty) VitalSignCard(
                     context,
                     title: 'الأكسجة',
                     controller: TextEditingController(text: healthRecord.visitCase!.oxygenation.toString()),
                     enabled: false,
                     forHealthRecord: true,
                   ),
-                  Padding(
+                  if(healthRecord.labTests.isEmpty) Padding(
                     padding: EdgeInsets.symmetric(vertical: 10.0),
                     child: MenuText('وصف الحالة :'),
                   ),
-                  Padding(
+                  if(healthRecord.labTests.isEmpty) Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 10.0),
                     child: CustomTextField(
                       context,
@@ -129,8 +131,51 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                       enabled: true,
                     ),
                   ),
+                  if(healthRecord.labTests.isNotEmpty) const SizedBox(height: 10.0),
+                  if(healthRecord.labTests.isNotEmpty) MenuText('التحاليل المخبرية:'),
+                  if(healthRecord.labTests.isNotEmpty) SizedBox(
+                    height: 180.0,
+                    child: Scrollbar(
+                      thumbVisibility: true,
+                      controller: scrollController,
+                      child: ListView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: EdgeInsets.all(10.0),
+                        scrollDirection: Axis.horizontal,
+                        controller: scrollController,
+                        children: [
+                          for (var labTest in healthRecord.labTests)
+                            CustomItemCard(
+                              id: labTest.id,
+                              title: labTest.name,
+                              value: labTest.price,
+                              isSelected: false,
+                              forLabTest: true,
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10.0),
-                  Row(
+                  if(healthRecord.lab != null)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        MenuText('المخبر الذي تم اختياره:'),
+                        const Spacer(),
+                        SizedBox(
+                          height: 165.0,
+                          child: CustomItemCard(
+                            id: healthRecord.lab!.id,
+                            title: healthRecord.lab!.name,
+                            value: healthRecord.lab!.rate!,
+                            isSelected: false,
+                            forLabTest: false,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
                     children: [
                       Padding(
                         padding: EdgeInsets.only(left: 10.0),
@@ -151,8 +196,7 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                       ),
                     ],
                   ),
-
-                  if(healthRecord.visitCase!.basicServicePrice! != healthRecord.visitCase!.finalPrice!)
+                  if (healthRecord.visitCase!.basicServicePrice! != healthRecord.visitCase!.finalPrice!)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -162,36 +206,38 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                           padding: EdgeInsets.only(left: 10.0, bottom: 10.0, top: 10.0),
                           child: MenuText('خدمات إضافية :'),
                         ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                          Padding(
-                            padding: EdgeInsets.only(left: 10.0),
-                            child: MenuText('الوصف :'),
+                        if (healthRecord.visitCase!.additionalFeesDescription != null && healthRecord.visitCase!.additionalFeesDescription!.isNotEmpty)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(left: 10.0),
+                                child: MenuText('الوصف :'),
+                              ),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 10.0),
+                                  child: Text(healthRecord.visitCase!.additionalFeesDescription!, style: TextStyle(fontSize: 14.0, color: Colors.black)),
+                                ),
+                              ),
+                            ],
                           ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 10.0),
-                                child: Text(healthRecord.visitCase!.additionalFeesDescription.toString(), style: TextStyle(fontSize: 14.0, color: Colors.black)),
+                        if (healthRecord.visitCase!.additionalFeesPrice != null)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.only(left: 10.0),
+                                child: MenuText('السعر :'),
                               ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(left: 10.0),
-                              child: MenuText('السعر :'),
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsets.only(left: 10.0),
-                                child: Text('${healthRecord.visitCase!.additionalFeesPrice} ل.س', style: TextStyle(fontSize: 14.0, color: Colors.black)),
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(left: 10.0),
+                                  child: Text('${healthRecord.visitCase!.additionalFeesPrice} ل.س', style: TextStyle(fontSize: 14.0, color: Colors.black)),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                       ],
                     ),
                   const SizedBox(height: 10.0),

@@ -1,7 +1,11 @@
 // ignore_for_file: non_constant_identifier_names, use_build_context_synchronously
 
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -15,12 +19,14 @@ import 'package:homecare/mvc/controller/regions_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/city.dart';
 import 'package:homecare/mvc/model/api/region.dart';
+import 'package:homecare/mvc/view/nurse/home_nurse.dart';
 import 'package:homecare/widgets/buttons.dart';
 import 'package:homecare/widgets/custom_dropdown_button.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/menu_text.dart';
 import 'package:homecare/widgets/nurse/upload_button.dart';
+import 'package:homecare/widgets/profile_image_widget.dart';
 import 'package:homecare/widgets/progress_indicator.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -32,7 +38,6 @@ class NurseAccountDetailsPage extends StatefulWidget {
 }
 
 class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
-
   final TextEditingController nameCtrl = TextEditingController();
   final TextEditingController lastNameCtrl = TextEditingController();
   final TextEditingController phoneCtrl = TextEditingController();
@@ -45,8 +50,6 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
   final formKey = GlobalKey<FormState>();
   String selectedCity = '';
   int selectedCityId = 1;
-  //bool citySelected = false;
-  //bool regionSelected = false;
   String selectedRegion = '';
   int selectedRegionId = 0;
   String? selectedGender;
@@ -63,6 +66,180 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
   double latitude = 0.0;
   double longitude = 0.0;
 
+  String? profileImagePath; // Renamed to profileImagePath
+  List<String?> filePaths = List.filled(6, null);
+  List<String?> fileNames = List.filled(6, null);
+  List<int> fileIds = [];
+  List<String> fileUrls = [];
+
+  bool loading = false;
+  List<bool> fileLoadingStates = List.filled(6, false); // Track loading state for each file
+
+  Future<void> pickFile(int fileIndex) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles();
+
+    if (result != null) {
+      setState(() {
+        filePaths[fileIndex] = result.files.single.path;
+        fileNames[fileIndex] = result.files.single.name;
+        fileLoadingStates[fileIndex] = true; // Set loading state to true
+      });
+      await uploadAttachment(fileIndex);
+      setState(() {
+        fileLoadingStates[fileIndex] = false; // Set loading state to false after upload
+      });
+    }
+  }
+
+  Future<void> uploadAttachment(int fileIndex) async {
+    setState(() {
+      loading = true;
+      fileLoadingStates[fileIndex] = true;
+    });
+
+    try {
+      String? filePath = filePaths[fileIndex];
+
+      if (filePath == null) {
+        setState(() {
+          loading = false;
+          fileLoadingStates[fileIndex] = false;
+        });
+        return;
+      }
+
+      if (fileIds[fileIndex] == -1 && fileUrls[fileIndex].isEmpty) {
+        // New file upload
+        int result = await ConnectionController.uploadFile(
+          folderName: 2,
+          token: sharedPrefsController.getToken(),
+          filePath: filePath,
+        );
+
+        if (result != -1) {
+          showSuccessToast("تم تحميل الملف");
+          setState(() {
+            fileIds[fileIndex] = result;
+          });
+          debugPrint('File ID for index $fileIndex: $result');
+        } else {
+          showErrorToast("فشل تحميل الملف");
+        }
+      } else {
+        // Update existing file - chain operations properly
+        bool deleteSuccess = await ConnectionController.deleteFile(
+          token: sharedPrefsController.getToken(),
+          id: fileIds[fileIndex],
+        );
+
+        if (deleteSuccess) {
+          int uploadResult = await ConnectionController.uploadFile(
+            folderName: 2,
+            token: sharedPrefsController.getToken(),
+            filePath: filePath,
+          );
+
+          if (uploadResult != -1) {
+            showSuccessToast("تم تحديث الملف");
+            setState(() {
+              fileIds[fileIndex] = uploadResult;
+            });
+            debugPrint('Updated File ID for index $fileIndex: $uploadResult');
+          } else {
+            showErrorToast("فشل تحديث الملف");
+          }
+        } else {
+          showErrorToast("حدث خطأ أثناء حذف الملف القديم");
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in uploadAttachment: $e');
+      showErrorToast("حدث خطأ غير متوقع");
+    } finally {
+      setState(() {
+        loading = false;
+        fileLoadingStates[fileIndex] = false;
+      });
+    }
+  }
+
+  void showSuccessToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.grey[600],
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
+  void showErrorToast(String message) {
+    Fluttertoast.showToast(
+      msg: message,
+      toastLength: Toast.LENGTH_SHORT,
+      gravity: ToastGravity.BOTTOM,
+      timeInSecForIosWeb: 1,
+      backgroundColor: Colors.red[600],
+      textColor: Colors.white,
+      fontSize: 16.0,
+    );
+  }
+
+  Future<void> pickImage() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+
+    if (result != null) {
+      setState(() {
+        profileImagePath = result.files.single.path; // Updated to profileImagePath
+      });
+      uploadProfileImage(profileImagePath!);
+    }
+  }
+
+  Future<void> uploadProfileImage(String filePath) async {
+    setState(() {
+      loading = true;
+    });
+
+    int result = await ConnectionController.uploadFile(
+      folderName: 1,
+      token: sharedPrefsController.getToken(),
+      filePath: filePath,
+    );
+    setState(() {
+      loading = false;
+    });
+
+    if (result != -1) {
+      Fluttertoast.showToast(
+        msg: "تم تحميل الصورة",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      // Update the profile image URL in shared preferences
+      //sharedPrefsController.saveProfileImageUrl(imageUrl: filePath);
+    } else {
+      Fluttertoast.showToast(
+        msg: "فشل تحميل الصورة",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  }
+
   @override
   void initState() {
     initializeData();
@@ -73,7 +250,7 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
     nameCtrl.text = sharedPrefsController.getFirstName();
     lastNameCtrl.text = sharedPrefsController.getLastName();
     genderValue = sharedPrefsController.getGender();
-    if(genderValue == 0) genderValue = 1;
+    if (genderValue == 0) genderValue = 1;
     selectedGender = genderValue == 2 ? 'أنثى' : 'ذكر';
     phoneCtrl.text = '0${sharedPrefsController.getMobileNumber()}';
     alterPhoneCtrl.text = sharedPrefsController.getAltMobileNumber();
@@ -83,6 +260,19 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
     longitude = sharedPrefsController.getLongitude();
     selectedCityId = sharedPrefsController.getCityId();
     selectedRegionId = sharedPrefsController.getRegionId();
+
+    // Load the lists of attachments' Ids and Urls
+    fileIds = sharedPrefsController.getListOfAttachmentsIds();
+    fileUrls = sharedPrefsController.getListOfAttachmentsUrls();
+
+    // Update the filePaths and fileNames lists based on the loaded data
+    for (int i = 0; i < 6; i++) {
+      if (fileUrls[i].isNotEmpty) {
+        filePaths[i] = fileUrls[i];
+        fileNames[i] = fileUrls[i].split('/').last; // Extract the file name from the URL
+      }
+    }
+
     debugPrint('city id   ===> $selectedCityId');
     debugPrint('region id ===> $selectedRegionId');
     debugPrint('length ===> ${citiesController.cities.length}');
@@ -113,6 +303,11 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
 
     debugPrint('city    ===> $selectedCity');
     debugPrint('Region  ===> $selectedRegion');
+    print('Initial Method');
+    print('Length : ${fileIds.length}');
+    for(int i = 0; i< fileIds.length; i++) {
+      print('[${fileIds[i]}] -');
+    }
   }
 
   void onGenderSelected(String? newGender) {
@@ -145,13 +340,25 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                       children: [
                         Stack(
                           children: [
-                            const Align(alignment: Alignment.center, child: CircleAvatar(radius: 75.0, backgroundColor: HomeCareTheme.secondaryColor)),
+                            Align(
+                              alignment: Alignment.center,
+                              child: profileImagePath != null
+                                  ? CircleAvatar(
+                                radius: 75.0,
+                                backgroundColor: HomeCareTheme.secondaryColor,
+                                backgroundImage: FileImage(File(profileImagePath!)),
+                              ) : ProfileImageWidget(
+                                sharedPrefsController: sharedPrefsController,
+                                width: 150.0,
+                                height: 150.0,
+                              ),
+                            ),
                             Align(
                               alignment: Alignment.center,
                               child: Padding(
                                 padding: const EdgeInsets.only(right: 120.0, top: 75.0),
                                 child: IconButton(
-                                  onPressed: () {},
+                                  onPressed: pickImage,
                                   icon: const Icon(CupertinoIcons.add_circled_solid, color: HomeCareTheme.primaryColor, size: 50.0),
                                 ),
                               ),
@@ -217,7 +424,7 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                             ],
                           ),
                         ),
-                        if(showGenderMsg) RequiredText(),
+                        if (showGenderMsg) RequiredText(),
                         MenuText(' : رقم الهاتف'),
                         CustomTextFieldWithLabel(
                           context,
@@ -247,14 +454,12 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                           },
                         ),
                         const SizedBox(height: 10.0),
-                        //const SizedBox(height: 10.0),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             MenuText(' : المدينة'),
                             const SizedBox(height: 5.0),
                             CustomDropdownWidget<City>(
-                              //enabled: true,
                               items: citiesController.cities,
                               selectedItem: selectedCity.isEmpty
                                   ? null
@@ -266,7 +471,6 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                                 setState(() {
                                   selectedCityId = value?.id ?? 0;
                                   selectedCity = value?.name ?? '';
-                                  //citySelected = true;
                                 });
                               },
                               hintText: 'المدينة',
@@ -288,26 +492,26 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                             ),
                             const SizedBox(height: 5.0),
                             CustomDropdownWidget<Region>(
-                              //enabled: citySelected,
                               showMsg: showRegionMsg,
                               items: selectedCityId == 1 ? regionsController.regions1 : regionsController.regions2,
                               selectedItem: selectedRegion.isEmpty
                                   ? null
-                                  : selectedCityId == 1 ? regionsController.regions1.firstWhere(
+                                  : selectedCityId == 1
+                                  ? regionsController.regions1.firstWhere(
                                     (region) => region.name == selectedRegion,
                                 orElse: () => regionsController.regions1[0],
-                              ) : regionsController.regions2.firstWhere(
+                              )
+                                  : regionsController.regions2.firstWhere(
                                     (region) => region.name == selectedRegion,
                                 orElse: () => regionsController.regions2[0],
                               ),
                               onItemSelected: (Region? value) {
                                 setState(() {
                                   selectedRegion = value?.name ?? '';
-                                  //regionSelected = true;
                                   selectedRegionId = value?.id ?? 0;
                                 });
                               },
-                              hintText:  'المنطقة',
+                              hintText: 'المنطقة',
                               displayText: (Region region) => region.name,
                             ),
                           ],
@@ -382,7 +586,7 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                             ),
                           ),
                         ),
-                        if(showLocationMsg) RequiredText(location: true),
+                        if (showLocationMsg) RequiredText(location: true),
                         MenuText(' : تاريخ الميلاد'),
                         CustomMenuItem(
                           context,
@@ -414,21 +618,29 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                             ),
                           ),
                         ),
-                        if(showBirthDateMsg) RequiredText(),
+                        if (showBirthDateMsg) RequiredText(),
                         const SizedBox(height: 20.0),
                         MenuText(' : إرفاق المستندات'),
                         Row(
                           children: [
-                            UploadButton(onPressed: () {},),
-                            UploadButton(onPressed: () {},),
-                            UploadButton(onPressed: () {},),
+                            for (int i = 0; i < 3; i++)
+                              UploadButton(
+                                onPressed: () => pickFile(i),
+                                filePath: filePaths[i],
+                                fileName: fileNames[i],
+                                loading: fileLoadingStates[i],
+                              ),
                           ],
                         ),
                         Row(
                           children: [
-                            UploadButton(onPressed: () {},),
-                            UploadButton(onPressed: () {},),
-                            UploadButton(onPressed: () {},),
+                            for (int i = 3; i < 6; i++)
+                              UploadButton(
+                                onPressed: () => pickFile(i),
+                                filePath: filePaths[i],
+                                fileName: fileNames[i],
+                                loading: fileLoadingStates[i], // Pass the loading state
+                              ),
                           ],
                         ),
                         Padding(
@@ -455,8 +667,6 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
     );
   }
 
-  bool loading = false;
-
   void validateAndSubmit() async {
     // Perform form validation
     final isFormValid = formKey.currentState!.validate();
@@ -472,14 +682,6 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
       } else {
         showBirthDateMsg = false;
       }
-
-      // City selector validation
-      /*if (!citySelected) {
-        showCityMsg = true;
-        isCustomValid = false;
-      } else {
-        showCityMsg = false;
-      }*/
 
       // Region selector validation
       if (selectedRegionId == 0) {
@@ -511,6 +713,8 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
       debugPrint('Alt Phone   : ${alterPhoneCtrl.text}');
       debugPrint('Gender      : $genderValue');
       debugPrint('Region Id   : $selectedRegionId');
+      debugPrint('Profile Image Id   : ${sharedPrefsController.getIdOfProfileImage()}');
+      debugPrint('attachments length : ${fileIds.length}'); // Debug print the actual attachments length
       String token = sharedPrefsController.getToken();
       var result = await ConnectionController.updateNursePersonalInfo(
         firstName: nameCtrl.text,
@@ -520,8 +724,8 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
         dialCodeForAlternativePhoneNumber: '+963',
         alternativePhoneNumber: alterPhoneCtrl.text,
         gender: genderValue,
-        personalImageId: null,
-        attachmentIds: null,
+        personalImageId: sharedPrefsController.getIdOfProfileImage(),
+        attachmentIds: fileIds, // Pass the actual attachments list
         latitude: latitude,
         longitude: longitude,
         regionId: selectedRegionId,
@@ -530,9 +734,9 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
       setState(() {
         loading = false;
       });
-       if(sharedPrefsController.sessionTerminated()) {
-         HomeCareStyle.showReLoginDialog(context);
-       } else if(result) {
+      if (sharedPrefsController.sessionTerminated()) {
+        HomeCareStyle.showReLoginDialog(context);
+      } else if (result) {
         String fullName = '${nameCtrl.text} ${lastNameCtrl.text}';
         sharedPrefsController.saveFullName(fullName: fullName);
         sharedPrefsController.setMustFillInfo(flag: false);
@@ -553,7 +757,16 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
         sharedPrefsController.saveRegionId(regionId: selectedRegionId);
         sharedPrefsController.saveCityId(cityId: selectedCityId);
         sharedPrefsController.saveAddressDetails(details: addressCtrl.text);
+
+        // Save the updated lists
+        sharedPrefsController.saveListOfAttachmentsUrls(urls: filePaths.map((path) => path ?? '').toList());
+        sharedPrefsController.saveListOfAttachmentsIds(ids: fileIds);
+
         Navigator.pop(context);
+        pageNurseController.animateToPage(2,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeOutQuad,
+        );
       } else {
         HomeCareStyle.showSnackBar(
           context,

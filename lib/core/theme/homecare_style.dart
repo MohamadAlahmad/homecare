@@ -8,23 +8,27 @@ import 'package:homecare/widgets/re_login_widget.dart';
 class HomeCareStyle {
 
   static void showSnackBar(BuildContext context, {required String content, bool? success = false, Color foregroundColor = Colors.white, required IconData icon, int duration = 3000}) {
-    ScaffoldMessenger.of(context)..hideCurrentSnackBar()..showSnackBar(SnackBar(
-      content: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(child: AutoSizeText(content, style: TextStyle(color: foregroundColor, fontSize: 14.0), textAlign: TextAlign.center)),
-          Icon(icon, color: Colors.white),
-        ],
-      ),
-      backgroundColor: success! ? Colors.green.withValues(alpha: 0.9) : HomeCareTheme.primaryColor.withValues(alpha: 0.9),
-      duration: Duration(milliseconds: duration),
-    ));
+    if (!context.mounted) return; // Check if the context is still mounted
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: AutoSizeText(content, style: TextStyle(color: foregroundColor, fontSize: 14.0), textAlign: TextAlign.center)),
+            Icon(icon, color: Colors.white),
+          ],
+        ),
+        backgroundColor: success! ? Colors.green.withOpacity(0.9) : HomeCareTheme.primaryColor.withOpacity(0.9),
+        duration: Duration(milliseconds: duration),
+      ));
   }
+
 
   static void showCustomDialog(BuildContext context, {
     required String title,
     required String buttonTitle,
-    required String content,
+    required Widget content,
     Color? buttonColor = Colors.green,
     Color? backButtonColor = HomeCareTheme.primaryColor,
     Color? backButtonTextColor = HomeCareTheme.primaryColorBold,
@@ -40,7 +44,7 @@ class HomeCareStyle {
           textDirection: TextDirection.rtl,
           child: AlertDialog(
             title: Text(title),
-            content: Text(content),
+            content: content,
             actions: <Widget>[
               if(!oneButton!) SizedBox(
                 width: 120.0,

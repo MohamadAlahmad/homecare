@@ -304,6 +304,62 @@ class SharedPrefsController extends GetxController {
   }
 
   //****************************************************************************
+  void saveProfileImageUrl({required String imageUrl}) {
+    prefs.setString('profile_image_path', imageUrl);
+    update();
+  }
+  String getProfileImageUrl() {
+    return prefs.getString('profile_image_path') ?? '';
+  }
+
+  //****************************************************************************
+  void saveIdOfProfileImage({required int id}) {
+    prefs.setInt('id_profile_image', id);
+    update();
+  }
+  int getIdOfProfileImage() {
+    return prefs.getInt('id_profile_image') ?? -1;
+  }
+
+  //****************************************************************************
+  void saveListOfAttachmentsIds({required List<int> ids}) {
+    if (ids.length != 6) {
+      throw ArgumentError('List must contain exactly 6 integers.');
+    }
+    prefs.setStringList(
+      'six_ids',
+      ids.map((e) => e.toString()).toList(),
+    );
+    update();
+  }
+
+  List<int> getListOfAttachmentsIds() {
+    final stringList = prefs.getStringList('six_ids');
+    if (stringList == null || stringList.length != 6) {
+      return List.filled(6, -1); // Default to six -1s
+    }
+    return stringList.map((e) => int.tryParse(e) ?? -1).toList();
+  }
+
+  //****************************************************************************
+  void saveListOfAttachmentsUrls({required List<String> urls}) {
+    if (urls.length != 6) {
+      print(urls.length);
+      throw ArgumentError('List must contain exactly 6 strings.');
+    }
+    prefs.setStringList('six_strings', urls);
+    update();
+  }
+
+  List<String> getListOfAttachmentsUrls() {
+    final stringList = prefs.getStringList('six_strings');
+    if (stringList == null || stringList.length != 6) {
+      return List.filled(6, ''); // Default to six empty strings
+    }
+    return stringList;
+  }
+
+  //****************************************************************************
 
   // Saving And Getting List Of Data To/From Shared Preferences
   Future<void> saveListOfInt({required String listKey, required List<int> list}) async {

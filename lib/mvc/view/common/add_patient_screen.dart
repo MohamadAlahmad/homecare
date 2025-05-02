@@ -619,7 +619,10 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
           content: 'هل تريد إدخال المعلومات الشخصية لإكمال الحجز ؟',
           onYesPressed: () {
             Navigator.push(context, MaterialPageRoute(builder: (context) =>
-                MyProfileScreen(youDidNotEnterYourInfo: true),
+                MyProfileScreen(
+                  youDidNotEnterYourInfo: true,
+                  forBookingThroughPackage: false,
+                ),
             ));
           },
         );

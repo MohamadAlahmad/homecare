@@ -71,7 +71,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       setState(() {
         notifications.addAll(newCases);
         hasMoreNotifications = newCases.isNotEmpty;
-        isInitialLoadingNotifications = false; // Initial loading is done
+        isInitialLoadingNotifications = false;
       });
     }
   }
@@ -124,8 +124,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         setState(() {
           notifications.clear();
           notificationPage = 1;
-          isInitialLoadingNotifications = true; // Show loading indicator
-          getNotifications(); // Refresh data
+          isInitialLoadingNotifications = true;
+          getNotifications();
         });
       },
       child: isInitialLoadingNotifications

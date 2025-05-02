@@ -14,6 +14,7 @@ class HttpHelper {
     required T Function() onSuccess,
     T Function()? onUnauthorizedAdditional,
     T Function()? onGone,
+    T Function()? onParamNotFound,
     T Function()? onBadRequest,
     T Function()? onPreconditionRequired,
     required Map<String, dynamic> responseBody,
@@ -28,6 +29,10 @@ class HttpHelper {
       throw Exception('Unauthorized access');
     } else if (statusCode == 410 && onGone != null) {
       return onGone();
+    } else if (statusCode == 404 && onParamNotFound != null) {
+      String message = responseBody['message'] ?? 'أحد الحقول مطلوبة';
+      prefsController.saveMSG(message: message);
+      return onParamNotFound();
     } else if (statusCode == 400 && onBadRequest != null) {
       // Save the message for 400 status code
       String message = responseBody['message'] ?? 'Bad Request';
@@ -39,8 +44,8 @@ class HttpHelper {
       prefsController.saveMSG(message: message);
       return onPreconditionRequired();
     } else {
-      debugPrint('\x1B[33m<<<<<<<<<<  STATUS CODE  >>>>>>>>> : \x1B[34m$statusCode\x1B[0m');
-      debugPrint('\x1B[33m<<<<<<<<<< RESPONSE BODY >>>>>>>>> : \x1B[34m$responseBody\x1B[0m');
+      print('\x1B[33m<<<<<<<<<<  STATUS CODE  >>>>>>>>> : \x1B[34m$statusCode\x1B[0m');
+      print('\x1B[33m<<<<<<<<<< RESPONSE BODY >>>>>>>>> : \x1B[34m$responseBody\x1B[0m');
       prefsController.saveMSG(message: 'حدث خطأ أثناء الاتصال .. الرجاء المحاولة لاحقاً');
       return Future.value(false as T);
     }
@@ -85,7 +90,6 @@ class HttpHelper {
         debugPrint('Failed to parse JSON: $e');
         parsedBody = {};
       }
-
       return {
         'statusCode': response.statusCode,
         'body': parsedBody,

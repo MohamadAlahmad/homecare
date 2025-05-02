@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:intl/intl.dart';
 
-DetailsCard({required String visitDateTime, required String details, required String hours}) {
+DetailsCard({required String visitDateTime, required String details, required String hours, required List<String> selectedLabTest, required String labName}) {
   // Parse the visitDateTime string to a DateTime object
   final parsedDateTime = DateTime.parse(visitDateTime);
 
@@ -68,6 +68,47 @@ DetailsCard({required String visitDateTime, required String details, required St
         ),
         const SizedBox(height: 5.0),
         Text(details.isEmpty ? 'عنوانك الحالي في التطبيق' : details),
+        if(selectedLabTest.isNotEmpty) Divider(),
+        if(selectedLabTest.isNotEmpty) Row(
+          children: [
+            Image.asset('assets/services/6_6.png', scale: 8.0, color: Color(0xFF094f57)),
+            const SizedBox(width: 5.0),
+            Text('التحاليل المخبرية', style: TextStyle(fontSize: 14.0, color: Colors.grey[600])),
+          ],
+        ),
+        if(selectedLabTest.isNotEmpty) const SizedBox(height: 5.0),
+        if(selectedLabTest.isNotEmpty)
+          Wrap(
+            spacing: 8.0, // Adjust the spacing between items
+            runSpacing: 4.0, // Adjust the spacing between lines
+            children: [
+              for (int i = 0; i < selectedLabTest.length; i++)
+                Text(
+                  i == selectedLabTest.length -1 ? '${selectedLabTest[i]}\n' : '${selectedLabTest[i]} -\n',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+            ],
+          ),
+        if(labName.isNotEmpty) Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Divider(),
+            Row(
+              children: [
+                Icon(Icons.biotech, color: Color(0xFF094f57)),
+                const SizedBox(width: 5.0),
+                Text('المخبر', style: TextStyle(fontSize: 14.0, color: Colors.grey[600])),
+              ],
+            ),
+            const SizedBox(height: 5.0),
+            Text(
+              labName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ],
     ),
   );

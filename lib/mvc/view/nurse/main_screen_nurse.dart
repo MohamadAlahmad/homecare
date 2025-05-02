@@ -9,6 +9,7 @@ import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/case.dart';
+import 'package:homecare/mvc/model/api/lab_test_model.dart';
 import 'package:homecare/mvc/model/api/patient.dart';
 import 'package:homecare/mvc/view/nurse/home_nurse.dart';
 import 'package:homecare/mvc/view/nurse/visit_details_nurse_screen.dart';
@@ -18,6 +19,7 @@ import 'package:homecare/widgets/home_care_page.dart';
 import 'package:homecare/widgets/message_widget.dart';
 import 'package:homecare/widgets/nurse/accepted_case_card.dart';
 import 'package:homecare/widgets/patient_brief_card.dart';
+import 'package:homecare/widgets/profile_image_widget.dart';
 import 'package:homecare/widgets/re_login_widget.dart';
 
 class MainScreenNurse extends StatefulWidget {
@@ -32,11 +34,10 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
   List<Patient> listOfPatients = [];
   bool empty = false;
 
-  // Pagination variables for accepted cases
   int acceptedPage = 1;
   bool hasMoreAccepted = true;
   bool isLoadingMoreAccepted = false;
-  bool isInitialLoadingAccepted = true; // Track initial loading state
+  bool isInitialLoadingAccepted = true;
   final List<Case> acceptedCases = [];
   final ScrollController acceptedScrollController = ScrollController();
 
@@ -44,10 +45,8 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
   void initState() {
     super.initState();
     getPatients();
-    getAcceptedCases(); // Fetch initial accepted cases
+    getAcceptedCases();
     debugPrint('Is Nurse Session Terminated ==> ${sharedPrefsController.sessionTerminated()}');
-
-    // Add scroll listener for pagination
     acceptedScrollController.addListener(onAcceptedScroll);
   }
 
@@ -57,20 +56,22 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
     super.dispose();
   }
 
-  // Fetch patients
   getPatients() async {
-    var patients = await ConnectionController.getPatients(token: sharedPrefsController.getToken());
-    if(mounted) {
-      setState(() {
-        listOfPatients = patients;
-        if (listOfPatients.isEmpty) {
-          empty = true;
-        }
-      });
+    try {
+      var patients = await ConnectionController.getPatients(token: sharedPrefsController.getToken());
+      if(mounted) {
+        setState(() {
+          listOfPatients = patients;
+          if (listOfPatients.isEmpty) {
+            empty = true;
+          }
+        });
+      }
+    } catch (e) {
+      print('ERROR ERROR ERROR : $e');
     }
   }
 
-  // Fetch accepted cases with pagination
   Future<void> getAcceptedCases() async {
     var newCases = await ConnectionController.getAcceptedCases(
       token: sharedPrefsController.getToken(),
@@ -80,12 +81,11 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
       setState(() {
         acceptedCases.addAll(newCases);
         hasMoreAccepted = newCases.isNotEmpty;
-        isInitialLoadingAccepted = false; // Initial loading is done
+        isInitialLoadingAccepted = false;
       });
     }
   }
 
-  // Scroll listener for accepted cases
   void onAcceptedScroll() {
     if (acceptedScrollController.position.pixels == acceptedScrollController.position.maxScrollExtent) {
       if (hasMoreAccepted && !isLoadingMoreAccepted) {
@@ -94,7 +94,6 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
     }
   }
 
-  // Load more accepted cases
   Future<void> _loadMoreAcceptedCases() async {
     if (mounted) {
       setState(() => isLoadingMoreAccepted = true);
@@ -110,16 +109,10 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
   Widget build(BuildContext context) {
     return HomeCarePage(
       title: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
-      image: Container(
+      image: ProfileImageWidget(
+        sharedPrefsController: sharedPrefsController,
         height: MediaQuery.of(context).size.height * 0.08,
         width: MediaQuery.of(context).size.width * 0.15,
-        decoration: const BoxDecoration(
-          color: HomeCareTheme.secondaryColor,
-          shape: BoxShape.circle,
-          image: DecorationImage(
-            image: AssetImage('assets/images/nurse_temp.png'),
-          ),
-        ),
       ),
       onImagePressed: () {
         pageNurseController.animateToPage(
@@ -156,8 +149,8 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
                         child: AlertDialog(
                           title: isLoading
                               ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
-                              : Text('الانتقال إلى حساب المريض'),
-                          content: isLoading ? SizedBox.shrink() : Text('أنت على وشك فتح التطبيق كحساب مريض !'),
+                              : Text('الانتقال إلى حساب المريض '),
+                          content: isLoading ? SizedBox.shrink() : Text('أنت على وشك فتح التطبيق كحساب المريض ${listOfPatients[index].firstName} ${listOfPatients[index].lastName} !'),
                           actions: <Widget>[
                             if (!isLoading)
                               SizedBox(
@@ -245,10 +238,10 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
       backgroundColor: Colors.white,
       onRefresh: () async {
         setState(() {
-          acceptedCases.clear(); // Clear current list of cases
+          acceptedCases.clear();
           acceptedPage = 1;
-          isInitialLoadingAccepted = true; // Show loading indicator
-          getAcceptedCases(); // Refresh data
+          isInitialLoadingAccepted = true;
+          getAcceptedCases();
         });
       },
       child: isInitialLoadingAccepted
@@ -279,7 +272,7 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
                 ),
               );
             } else {
-              return SizedBox.shrink(); // No spinner if no more data
+              return SizedBox.shrink();
             }
           }
 
@@ -329,10 +322,10 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
                                       );
 
                                       setState(() {
-                                        acceptedCases.clear(); // Clear current list
+                                        acceptedCases.clear();
                                         acceptedPage = 1;
-                                        isInitialLoadingAccepted = true; // Show loading indicator
-                                        getAcceptedCases(); // Refresh data
+                                        isInitialLoadingAccepted = true;
+                                        getAcceptedCases();
                                       });
                                     } else {
                                       HomeCareStyle.showSnackBar(
@@ -370,6 +363,9 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
               );
             },
             onPressed: () {
+              List<LabTestModel> labTests = (caseItem.labTests as List)
+                  .map((item) => LabTestModel.fromJson(item))
+                  .toList();
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -382,14 +378,17 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
                         ? '${caseItem.geocodedAddress!.governorateDto.name} ${caseItem.geocodedAddress!.regionDto.name} ${caseItem.geocodedAddress!.details}'
                         : '(العنوان فارغ)',
                     sessionId: caseItem.id,
+                    forLabService: caseItem.labTests!.isNotEmpty,
+                    labTests: labTests,
+                    lab: caseItem.lab,
                   ),
                 ),
               ).then((_) {
                 setState(() {
-                  acceptedCases.clear(); // Clear current list
+                  acceptedCases.clear();
                   acceptedPage = 1;
-                  isInitialLoadingAccepted = true; // Show loading indicator
-                  getAcceptedCases(); // Refresh data
+                  isInitialLoadingAccepted = true;
+                  getAcceptedCases();
                 });
               });
             },
@@ -399,5 +398,4 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
       ),
     );
   }
-
 }

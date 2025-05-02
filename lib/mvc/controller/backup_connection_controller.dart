@@ -1557,7 +1557,7 @@ class ConnectionController {
         if (result['data'] != null) {
           final sessionDetails = result['data']['sesssionDetails'];
           if (sessionDetails != null) {
-            return PreviousCase.fromJson(sessionDetails);
+            return PreviousCase.fromJson(sessionDetails, result['data']['visitDate']);
           } else {
             debugPrint('Session details not found');
             return null;

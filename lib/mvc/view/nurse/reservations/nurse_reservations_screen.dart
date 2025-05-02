@@ -91,7 +91,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
       setState(() {
         pendingCases.addAll(newCases);
         hasMorePending = newCases.isNotEmpty;
-        isInitialLoadingPending = false; // Initial loading is done
+        isInitialLoadingPending = false;
       });
     }
   }
@@ -105,7 +105,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
       setState(() {
         finishedCases.addAll(newCases);
         hasMoreFinished = newCases.isNotEmpty;
-        isInitialLoadingFinished = false; // Initial loading is done
+        isInitialLoadingFinished = false;
       });
     }
   }
@@ -119,7 +119,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
       setState(() {
         cancelledCases.addAll(newCases);
         hasMoreCancelled = newCases.isNotEmpty;
-        isInitialLoadingCancelled = false; // Initial loading is done
+        isInitialLoadingCancelled = false;
       });
     }
   }
@@ -281,8 +281,8 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
         setState(() {
           pendingCases.clear();
           pendingPage = 1;
-          isInitialLoadingPending = true; // Show loading indicator
-          getPendingCases(); // Refresh data
+          isInitialLoadingPending = true;
+          getPendingCases();
         });
       },
       child: isInitialLoadingPending
@@ -343,7 +343,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
                             SizedBox(
                               width: 120.0,
                               child: IconButton(
-                                onPressed: isLoading ? () {} : () async {
+                                onPressed: isLoading ? null : () async {
                                   setStateDialog(() => isLoading = true);
 
                                   var result = await ConnectionController.acceptCase(
@@ -366,7 +366,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
                                       setState(() {
                                         pendingCases.clear();
                                         pendingPage = 1;
-                                        isInitialLoadingPending = true; // Show loading indicator
+                                        isInitialLoadingPending = true;
                                         getPendingCases(); // Fetch new data
                                       });
                                     }
@@ -380,7 +380,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
                                 },
                                 style: IconButton.styleFrom(
                                   elevation: 0.0,
-                                  backgroundColor: Colors.green.withValues(alpha: 0.1),
+                                  backgroundColor: Colors.green.withOpacity(0.1),
                                 ),
                                 icon: Text(
                                   'قبول الطلب',
@@ -391,10 +391,10 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
                             SizedBox(
                               width: 100.0,
                               child: IconButton(
-                                onPressed: () => Navigator.of(dialogContext).pop(),
+                                onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
                                 style: IconButton.styleFrom(
                                   elevation: 0.0,
-                                  backgroundColor: Colors.grey.withValues(alpha: 0.3),
+                                  backgroundColor: Colors.grey.withOpacity(0.3),
                                 ),
                                 icon: Text(
                                   'تراجع',
@@ -413,6 +413,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
                 },
               );
             },
+
           );
         },
       ),
@@ -427,8 +428,8 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
         setState(() {
           finishedCases.clear();
           finishedPage = 1;
-          isInitialLoadingFinished = true; // Show loading indicator
-          getFinishedCases(); // Refresh data
+          isInitialLoadingFinished = true;
+          getFinishedCases();
         });
       },
       child: isInitialLoadingFinished
@@ -487,8 +488,8 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
         setState(() {
           cancelledCases.clear();
           cancelledPage = 1;
-          isInitialLoadingCancelled = true; // Show loading indicator
-          getCancelledCases(); // Refresh data
+          isInitialLoadingCancelled = true;
+          getCancelledCases();
         });
       },
       child: isInitialLoadingCancelled
