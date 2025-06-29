@@ -36,6 +36,8 @@ dependencies:
   path_provider:
   path:
   flutter_offline:
+  url_launcher:
+  device_info_plus:
 
 dev_dependencies:
   flutter_test:

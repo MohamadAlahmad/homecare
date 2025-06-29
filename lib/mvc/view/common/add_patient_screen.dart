@@ -525,16 +525,7 @@ class _AddPatientScreenState extends State<AddPatientScreen> {
         content: '''من خلال النقر على "الموافقة" أقر بأنني أنا (${nameCtrl.text} ${lastNameCtrl.text}) قرأت وفهمت سياسة الخصوصية وشروط الاستخدام الخاصة بتطبيق قلب ALB ، و أوافق على جمع واستخدام بياناتي الشخصية للأغراض المحددة في سياسة الخصوصية وأوافق علي إدارة حسابي من قِبل ${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()} ، وأعلم أنني أستطيع سحب موافقتي على إدارة حسابي في أي وقت عن طريق التواصل مع الدعم الفني بعد تأكيدي لهم بملكية الحساب ''',
         onYesPressed: () async {
           Navigator.pop(context);
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) {
-              return AlertDialog(
-                backgroundColor: Colors.transparent,
-                title: HCCPI(color: Colors.white, size: 30.0),
-              );
-            },
-          );
+          HomeCareStyle.showLoadingDialog(context);
           var result = await ConnectionController.requestAccountManagement(
             patientDialCode: '+963',
             patientPhoneNumber: phoneCtrl.text,

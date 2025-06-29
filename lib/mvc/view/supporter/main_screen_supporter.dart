@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';
+import 'package:homecare/core/utils/helper_methods.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/patient.dart';
@@ -113,7 +114,11 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
             MaterialPageRoute(builder: (context) => PersonalProfileScreen()),
           );
         },
-        onLogout: logoutMethod,
+        onLogout: () {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            HomeCareHelperClass.logoutMethod(context);
+          });
+        },
         supporter: true,
         body: sharedPrefsController.sessionTerminated()
             ? ReLoginWidget(context)
@@ -199,12 +204,11 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
                   name: '${patient.firstName} ${patient.lastName}',
                   address: patient.locationDetails,
                   onDelete: () async {
-                    HomeCareStyle.showCustomDialog(
+                    HomeCareStyle.showHomeCareDialog(
                       context,
                       title: 'تأكيد الحذف',
-                      buttonTitle: 'حذف',
-                      content: Text('هل أنت متأكد أنك تريد حذف المريض ؟'),
-                      onYesPressed: () async {
+                      content: 'هل أنت متأكد أنك تريد حذف المريض ؟',
+                      onOk: () async {
                         var result = await ConnectionController.deletePatientBySupporter(
                           token: sharedPrefsController.getToken(),
                           id: patient.id,
@@ -223,6 +227,7 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
                             content: 'تم الحذف بنجاح',
                             icon: Icons.check_circle,
                           );
+                          Navigator.pop(context);
                         } else {
                           HomeCareStyle.showSnackBar(
                             context,
@@ -231,7 +236,9 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
                           );
                         }
                       },
-                      buttonColor: Colors.red,
+                      onOkColor: HomeCareTheme.redColor,
+                      onCancelColor: HomeCareTheme.primaryColor,
+                      width: HomeCareSize.width(context),
                     );
                   },
                 );
@@ -241,41 +248,6 @@ class _MainScreenSupporterState extends State<MainScreenSupporter> {
           SizedBox(height: 100.0),
         ],
       ),
-    );
-  }
-
-  logoutMethod() {
-    HomeCareStyle.showCustomDialog2(
-      context,
-      title: 'تسجيل الخروج',
-      buttonTitle: 'نعم',
-      content: 'هل تريد تسجيل الخروج فعلاً من حسابك في التطبيق ؟',
-      onYesPressed: () async {
-        try {
-          var result = await ConnectionController.logout(token: sharedPrefsController.getToken());
-
-          if (result) {
-            sharedPrefsController.clearData();
-            GlobalPageController.registerController = PageController(initialPage: 0);
-            Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
-          } else {
-            Navigator.pop(context);
-            HomeCareStyle.showSnackBar(
-              context,
-              content: 'فشل تسجيل الخروج',
-              icon: CupertinoIcons.exclamationmark_circle_fill,
-            );
-          }
-        } catch (e) {
-          Navigator.pop(context);
-          HomeCareStyle.showSnackBar(
-            context,
-            content: 'لا يوجد اتصال بالإنترنت',
-            icon: CupertinoIcons.wifi_exclamationmark,
-          );
-        }
-      },
-      buttonColor: Colors.red,
     );
   }
 

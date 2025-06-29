@@ -8,14 +8,14 @@ import 'package:homecare/mvc/view/nurse/home_nurse.dart';
 import 'package:homecare/mvc/view/patient/home_patient.dart';
 import 'package:homecare/widgets/buttons.dart';
 
-Directionality MessageWidget({required String text, bool small = false, bool medium = false, Color? color = Colors.grey, bool mustFillInfo = false}) {
+Directionality MessageWidget({required String text, bool small = false, bool medium = false, Color? color = Colors.grey, bool errorOrWarning = false}) {
   return Directionality(
     textDirection: TextDirection.rtl,
     child: Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(mustFillInfo ? CupertinoIcons.info_circle_fill : CupertinoIcons.exclamationmark_bubble_fill, color: color, size: small ? 30.0 : medium ? 50.0 : 75.0),
+          Icon(errorOrWarning ? CupertinoIcons.info_circle_fill : CupertinoIcons.exclamationmark_bubble_fill, color: color, size: small ? 30.0 : medium ? 50.0 : 75.0),
           SizedBox(height: small ? 0.0 : 10.0),
           Text(text, style: TextStyle(fontSize: small ? 10.0 : medium ? 15.0 : 20.0, color: color), textAlign: TextAlign.center),
           SizedBox(height: small ? 0.0 : 50.0),

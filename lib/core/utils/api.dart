@@ -1,5 +1,5 @@
 class HomeCareApi {
-  static const String baseUrl = '''http://185.158.94.162:8080''';
+  static const String baseUrl = '''https://sub.alb-app.com''';//'''http://185.158.94.162:8080''';
   static const String sendCode = '''/api/Auth/SendCode''';
   static const String verifyFirstCode = '''/api/Auth/VerifyFirstCode''';
   static const String verifySecondCode = '''/api/Auth/VerifySecondCode''';
@@ -46,4 +46,5 @@ class HomeCareApi {
   static const String deleteFile = '''/api/FileManager/Delete''';
   static const String getLabTests = '''/api/LabTests/GetAllLabTests''';
   static const String getLabs = '''/api/Labs/GetAllLabs''';
+  static const String getVersion = '''/api/Settings/GetCurrentVersion''';
 }

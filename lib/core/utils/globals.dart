@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
-import 'package:homecare/mvc/model/local/care_service.dart';
 import 'package:homecare/mvc/model/local/main_service.dart';
 import 'package:homecare/mvc/model/local/country.dart';
 import 'package:homecare/mvc/model/local/profile_item.dart';
@@ -33,6 +32,7 @@ class Globals {
   static int patientUserType = 2;
   static int nurseUserTpe = 3;
   static int supporterUserType = 4;
+  static String appVersion = '1.0.0';
 
   static List<MainService> listOfServices = [
     MainService(
@@ -76,70 +76,6 @@ class Globals {
       isActive: false,
       image: 'assets/services/5_5.png',
       page: const Center(),
-    ),
-  ];
-
-  static List<SubService> listOfCareServices = [
-    SubService(
-      id: 0,
-      name: 'خدمة رعاية كبار السن',
-      description: 'يقوم الممرض برعاية كبار السن مع تقديم العناية اللازمة لهم',
-      image: 'assets/images/temp_image.png',
-    ),
-    SubService(
-      id: 1,
-      name: 'خدمة الوالدين',
-      description: 'يقوم الممرض برعاية الوالدين',
-      image: 'assets/images/temp_image.png',
-    ),
-    SubService(
-      id: 2,
-      name: 'خدمة رعاية بعد وقبل العمليات',
-      description: 'يقوم الممرض برعاية المريض بعد وقبل العمليات',
-      image: 'assets/images/temp_image.png',
-    ),
-    SubService(
-      id: 3,
-      name: 'خدمة رعاية بعد الولادة',
-      description: 'رعاية كاملة بعد الولادة',
-      image: 'assets/images/temp_image.png',
-    ),
-    SubService(
-      id: 4,
-      name: 'رعاية ذوي الاحتياجات الخاصة',
-      description: 'خدمة رعاية ذوي الاحتياجات الخاصة',
-      image: 'assets/images/temp_image.png',
-    ),
-  ];
-
-  static List<SubService> listOfNursingServices = [
-    SubService(
-      id: 0,
-      name: 'خدمة التمريض المنزلي العام',
-      description: 'يقوم الممرض بإجراء الفحوص العامة مثل الضغط والسكر ونبض القلب',
-      image: 'assets/images/nursing_service_1.png',
-      price: '100',
-    ),
-    SubService(
-      id: 1,
-      name: 'خدمة الحقن العضلي',
-      description: 'يقوم الممرض بحقن الدواء مباشرةً في العضلات',
-      image: 'assets/images/nursing_service_2.png',
-      price: '25',
-    ),
-    SubService(
-      id: 2,
-      name: 'خدمة الحقن الوريدي',
-      description: 'حقن الدواء عن طريق الوريد',
-      image: 'assets/images/nursing_service_3.png',
-      price: '50',
-    ),
-    SubService(
-      id: 3,
-      name: 'خدمة تضميد الجروح',
-      description: 'العناية بأنواع مختلفة من الجروح مثل الحروق والجروح الجراحية أو السكر',
-      image: 'assets/images/nursing_service_4.png',
-      price: '100',
     ),
   ];
 

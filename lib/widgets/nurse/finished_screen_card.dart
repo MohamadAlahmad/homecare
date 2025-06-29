@@ -5,13 +5,15 @@ import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';
 import 'package:intl/intl.dart';
 
-Widget FinishedScreenCard(BuildContext context, {
+Widget GeneralCaseCard(BuildContext context, {
   required String medicalServiceName,
   required String patientName,
   required String visitDate,
   required String? address,
   required VoidCallback onPressed,
   required bool isSpecial,
+  required bool isForNurseActivityRecord,
+  bool isCancelled = false,
 }) {
   // Parse the visitDate string to DateTime
   DateTime parsedDate = DateTime.parse(visitDate);
@@ -23,7 +25,7 @@ Widget FinishedScreenCard(BuildContext context, {
   String formattedTime = DateFormat('hh:mm a', 'en').format(parsedDate); // Change 'ar' to your desired locale if needed
 
   return Container(
-    height: 165.0,
+    //height: 165.0,
     width: MediaQuery.of(context).size.width,
     margin: const EdgeInsets.only(bottom: 10.0),
     padding: const EdgeInsets.all(10.0),
@@ -36,7 +38,9 @@ Widget FinishedScreenCard(BuildContext context, {
         Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           //mainAxisSize: MainAxisSize.min,
+          spacing: 5.0,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -60,7 +64,7 @@ Widget FinishedScreenCard(BuildContext context, {
                       children: [
                         CircleAvatar(
                           radius: 12.0,
-                          backgroundImage: AssetImage('assets/images/person.png'),
+                          backgroundImage: AssetImage('assets/images/person1_temp.png'),
                         ),
                         const SizedBox(width: 5.0),
                         Text(patientName, style: TextStyle(fontSize: 12.0)),
@@ -71,8 +75,6 @@ Widget FinishedScreenCard(BuildContext context, {
               ],
             ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset('assets/icons/location_nurse.png', scale: 3.0, color: HomeCareTheme.primaryColorBoldExtra),
                 const SizedBox(width: 3.0),
@@ -82,12 +84,18 @@ Widget FinishedScreenCard(BuildContext context, {
                     padding: const EdgeInsets.only(top: 5.0),
                     child: Text(address!.isEmpty ? '(لا يوجد عنوان)' : address,
                       style: TextStyle(color: Colors.black, fontSize: 14.0),
-                      maxLines: 1,
+                      maxLines: isCancelled ? 3 : 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
-                const SizedBox(width: 5.0),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: isCancelled ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              children: [
+
                 Image.asset('assets/icons/calendar_nurse.png', scale: 3.0, color: HomeCareTheme.primaryColorBoldExtra),
                 const SizedBox(width: 3.0),
                 Expanded(
@@ -116,7 +124,7 @@ Widget FinishedScreenCard(BuildContext context, {
                 ),
               ],
             ),
-            Padding(
+            if(!isCancelled || isForNurseActivityRecord) Padding(
               padding: const EdgeInsets.symmetric(horizontal: 10.0),
               child: SizedBox(
                 width: HomeCareSize.width(context),

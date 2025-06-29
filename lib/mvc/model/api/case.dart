@@ -13,6 +13,7 @@ class Case {
   String? patientPhoneNumber;
   LabModel? lab;
   List<dynamic>? labTests;
+  int visitDurationInHours;
 
   Case({
     required this.id,
@@ -27,6 +28,7 @@ class Case {
     required this.patientPhoneNumber,
     required this.lab,
     required this.labTests,
+    required this.visitDurationInHours,
   });
 
   factory Case.fromJson(Map<String, dynamic> json) {
@@ -45,6 +47,7 @@ class Case {
       patientPhoneNumber: json['patientPhoneNumber'] ?? '(N/A)',
       lab: json['lab'] != null ? LabModel.fromJson(json['lab']) : null, // Parse lab field
       labTests: json['labTests'] ?? [],
+      visitDurationInHours: json['visitDurationInHours'] ?? 0,
     );
   }
 

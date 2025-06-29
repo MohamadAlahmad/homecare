@@ -116,7 +116,6 @@ class SharedPrefsController extends GetxController {
   // Method to delete user fcm token
   void deleteUserFCMToken() {
     prefs.remove('user_fcm_token');
-    print('Old FCM Token Deleted');
     update();
   }
 

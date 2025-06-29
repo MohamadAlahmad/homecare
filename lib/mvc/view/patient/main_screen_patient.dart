@@ -1,5 +1,3 @@
-//ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -97,75 +95,35 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
             name: '${listOfPatients[index].firstName} ${listOfPatients[index].lastName}',
             address: listOfPatients[index].locationDetails.isEmpty ? '(العنوان فارغ)' : listOfPatients[index].locationDetails,
             onPressed: () {
-              bool isLoading = false;
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext dialogContext) {
-                  return StatefulBuilder(
-                    builder: (context, setStateDialog) {
-                      return Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: AlertDialog(
-                          title: isLoading
-                              ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
-                              : Text('الانتقال إلى حساب المريض'),
-                          content: isLoading ? SizedBox.shrink() : Text('أنت على وشك فتح التطبيق كحساب مريض !'),
-                          actions: <Widget>[
-                            if (!isLoading)
-                              SizedBox(
-                                width: 120.0,
-                                child: IconButton(
-                                  onPressed: () async {
-                                    setStateDialog(() => isLoading = true);
-                                    var result = await ConnectionController.switchAccount(
-                                      token: sharedPrefsController.getToken(),
-                                      patientId: listOfPatients[index].id,
-                                    );
-                                    Navigator.of(dialogContext).pop();
-                                    if (result == 'true') {
-                                      sharedPrefsController.saveUserType(type: 2);
-                                      if (context.mounted) {
-                                        sharedPrefsController.setIsSubUser(value: true);
-                                        Navigator.of(context).pushAndRemoveUntil(
-                                          MaterialPageRoute(builder: (context) => HomePatient()),
-                                              (Route<dynamic> route) => false,
-                                        );
-                                      }
-                                    } else {
-                                      HomeCareStyle.showSnackBar(
-                                        context,
-                                        content: 'فشل تحويل الحساب ، حاول لاحقاً',
-                                        icon: CupertinoIcons.exclamationmark_triangle_fill,
-                                      );
-                                      debugPrint('<<< FAILED >>>');
-                                    }
-                                  },
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: Colors.green.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('تأكيد', style: TextStyle(color: Colors.green, fontSize: 14.0)),
-                                ),
-                              ),
-                            if (!isLoading)
-                              SizedBox(
-                                width: 100.0,
-                                child: IconButton(
-                                  onPressed: () => Navigator.of(dialogContext).pop(),
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: Colors.red.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('تراجع', style: TextStyle(color: Colors.red, fontSize: 14.0)),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
+              HomeCareStyle.showHomeCareDialog(
+                context,
+                title: 'الانتقال إلى حساب مريض',
+                content: 'أنت على وشك الانتقال إلى حساب المريض ${listOfPatients[index].firstName} ${listOfPatients[index].lastName} !',
+                onOk: () async {
+                  var result = await ConnectionController.switchAccount(
+                    token: sharedPrefsController.getToken(),
+                    patientId: listOfPatients[index].id,
                   );
+                  Navigator.of(context).pop();
+                  if (result == 'true') {
+                    sharedPrefsController.saveUserType(type: 2);
+                    if (context.mounted) {
+                      sharedPrefsController.setIsSubUser(value: true);
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => HomePatient()),
+                            (Route<dynamic> route) => false,
+                      );
+                    }
+                  } else {
+                    HomeCareStyle.showSnackBar(
+                      context,
+                      content: 'فشل تحويل الحساب ، حاول لاحقاً',
+                      icon: CupertinoIcons.exclamationmark_triangle_fill,
+                    );
+                    debugPrint('<<< FAILED >>>');
+                  }
                 },
+                width: HomeCareSize.width(context),
               );
             },
           );
@@ -204,6 +162,16 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
                         onClick: () {
                           if(Globals.listOfServices[index].isActive) {
                             Navigator.push(context, MaterialPageRoute(builder: (context) => Globals.listOfServices[index].page));
+                          } else {
+                            HomeCareStyle.showHomeCareDialog(
+                              context,
+                              title: Globals.listOfServices[index].name,
+                              content: 'عزيزي المستخدم، نعمل حاليًا على تفعيل خدمة "${Globals.listOfServices[index].name}" لضمان أفضل رعاية طبية لك. ستكون الخدمة متاحة قريبًا، ونقدّر تفهّمك ودعمك!',
+                              onOk: () {},
+                              oneButton: true,
+                              width: HomeCareSize.width(context),
+                              onCancelColor: HomeCareTheme.primaryColor,
+                            );
                           }
                         }
                     ),
@@ -216,13 +184,14 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
                 color: HomeCareTheme.primaryColor,
                 title: const Text('طلب مستعجَل', style: TextStyle(fontSize: 15.0, fontWeight: FontWeight.bold)),
                 onPressed: () {
-                  HomeCareStyle.showCustomDialog(
+                  HomeCareStyle.showHomeCareDialog(
                     context,
                     title: 'طلب مستعجَل',
-                    buttonTitle: 'buttonTitle',
-                    content: Text('عزيزي المستخدم، نعمل حاليًا على تفعيل خدمة الطلب المستعجل لضمان أفضل رعاية طبية لك. ستكون الخدمة متاحة قريبًا، ونقدّر تفهّمك ودعمك!'),
-                    onYesPressed: () {},
+                    content: 'عزيزي المستخدم، نعمل حاليًا على تفعيل خدمة الطلب المستعجل لضمان أفضل رعاية طبية لك. ستكون الخدمة متاحة قريبًا، ونقدّر تفهّمك ودعمك!',
+                    onOk: () {},
                     oneButton: true,
+                    width: HomeCareSize.width(context),
+                    onCancelColor: HomeCareTheme.primaryColor,
                   );
                 },
               ),
@@ -255,7 +224,7 @@ class _MainScreenPatientState extends State<MainScreenPatient> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return HCCPI(color: HomeCareTheme.primaryColor);
         } else if (snapshot.hasError) {
-          return MessageWidget(text: 'حدث خطأ أثناء الاتصال');
+          return MessageWidget(text: 'حدث خطأ أثناء الاتصال', errorOrWarning: true);
         } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return MessageWidget(text: 'لا توجد باقات');
         } else {

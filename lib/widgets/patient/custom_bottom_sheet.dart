@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/themes.dart';
+import 'package:homecare/core/utils/api.dart';
 import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/widgets/buttons.dart';
 
@@ -31,7 +32,6 @@ class ServiceModal extends StatefulWidget {
 
 class _ServiceModalState extends State<ServiceModal> {
   bool _hasError = false;
-  String baseUrl = 'http://185.158.94.162:8080/';
   String completeImageUrl = '';
 
   @override
@@ -89,7 +89,7 @@ class _ServiceModalState extends State<ServiceModal> {
   }
 
   Container _buildImageDecoration() {
-    completeImageUrl = '$baseUrl${widget.imagePath}';
+    completeImageUrl = '${HomeCareApi.baseUrl}/${widget.imagePath}';
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20.0),

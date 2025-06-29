@@ -2,10 +2,8 @@
 
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:get/get.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';
@@ -36,6 +34,7 @@ class VisitDetailsNurseScreen extends StatefulWidget {
   final String location;
   final int sessionId;
   final bool forLabService;
+  final int visitDurationInHours;
   final List<LabTestModel> labTests;
   final LabModel? lab;
 
@@ -50,6 +49,7 @@ class VisitDetailsNurseScreen extends StatefulWidget {
     required this.forLabService,
     required this.labTests,
     required this.lab,
+    required this.visitDurationInHours,
   });
 
   @override
@@ -257,6 +257,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                 nurseName: '${sharedPrefsController.getFirstName()} ${sharedPrefsController.getLastName()}',
                 date: DateTime.now(),
                 location: widget.location,
+                visitDurationInHours: widget.visitDurationInHours,
               ),
               Padding(
                 padding: EdgeInsets.symmetric(vertical: 15.0),
@@ -335,7 +336,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
               ),
               Padding(
                 padding: EdgeInsets.only(top: 20.0, bottom: 10.0),
-                child: MenuText('ملفات إضافية :'),
+                child: MenuText('ملفات إضافية : (اختياري)'),
               ),
               UploadButton(
                 onPressed: pickFile,
@@ -366,20 +367,11 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                             child: SingleChildScrollView(
                               child: FillSessionModal(
                                 title: 'تفاصيل الفاتورة',
-                                price: widget.servicePrice,
+                                price: widget.visitDurationInHours != 0 ? (widget.servicePrice * widget.visitDurationInHours) : widget.servicePrice,
                                 additionalServiceNameCtrl: additionalServiceNameController,
                                 additionalServicePriceCtrl: additionalServicePriceController,
                                 onPressed: () async {
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        backgroundColor: Colors.transparent,
-                                        title: HCCPI(color: Colors.white, size: 30.0),
-                                      );
-                                    },
-                                  );
+                                  HomeCareStyle.showLoadingDialog(context);
                                   try {
                                     var result = await ConnectionController.fillSessionForm(
                                       bioMarker1Value: bloodPressureFirstCtrl.text,
@@ -486,6 +478,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                           value: labTest.price,
                           isSelected: false,
                           forLabTest: true,
+                          imagePath: 'assets/icons/labTest.png',
                         ),
                     ],
                   ),
@@ -505,6 +498,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                       value: widget.lab!.rate!,
                       isSelected: false,
                       forLabTest: false,
+                      imagePath: 'assets/icons/lab.png',
                     ),
                   ),
                 ],
@@ -532,16 +526,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                                 additionalServiceNameCtrl: additionalServiceNameController,
                                 additionalServicePriceCtrl: additionalServicePriceController,
                                 onPressed: () async {
-                                  showDialog(
-                                    context: context,
-                                    barrierDismissible: false,
-                                    builder: (context) {
-                                      return AlertDialog(
-                                        backgroundColor: Colors.transparent,
-                                        title: HCCPI(color: Colors.white, size: 30.0),
-                                      );
-                                    },
-                                  );
+                                  HomeCareStyle.showLoadingDialog(context);
                                   try {
                                     var result = await ConnectionController.fillLabSessionForm(
                                       notes: caseDescription.text.isNotEmpty ? caseDescription.text : '',
@@ -616,7 +601,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
             } else if (sharedPrefsController.sessionTerminated()) {
               return ReLoginWidget(context);
             } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
+              return MessageWidget(text: 'حدث خطأ أثناء جلب البيانات', errorOrWarning: true);
             } else if (!snapshot.hasData) {
               return MessageWidget(text: 'لا توجد زيارة سابقة');
             } else {

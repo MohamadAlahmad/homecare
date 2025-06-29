@@ -22,15 +22,15 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
   int value = 0;
   late PageController pageController;
 
-  int finishedPage = 1;
-  bool hasMoreFinished = true;
-  bool isLoadingMoreFinished = false;
+  int pageNumber = 1;
+  bool hasMoreRecords = true;
+  bool isLoadingMore = false;
 
-  final List<Case> finishedCases = [];
+  final List<Case> activityRecord = [];
 
   bool isInitialLoadingFinished = true;
 
-  final ScrollController finishedScrollController = ScrollController();
+  final ScrollController scrollController = ScrollController();
 
   SharedPrefsController sharedPrefsController = SharedPrefsController();
 
@@ -39,49 +39,49 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     super.initState();
     pageController = PageController(initialPage: value);
 
-    getFinishedCases();
+    getActivitiesRecords();
 
-    finishedScrollController.addListener(onFinishedScroll);
+    scrollController.addListener(onScroll);
   }
 
   @override
   void dispose() {
-    finishedScrollController.dispose();
+    scrollController.dispose();
     pageController.dispose();
     super.dispose();
   }
 
-  Future<void> getFinishedCases() async {
+  Future<void> getActivitiesRecords() async {
     var newCases = await ConnectionController.getFinishedCases(
       token: sharedPrefsController.getToken(),
-      pageNumber: finishedPage,
+      pageNumber: pageNumber,
     );
     if (mounted) {
       setState(() {
-        finishedCases.addAll(newCases);
-        hasMoreFinished = newCases.isNotEmpty;
+        activityRecord.addAll(newCases);
+        hasMoreRecords = newCases.isNotEmpty;
         isInitialLoadingFinished = false;
       });
     }
   }
 
-  void onFinishedScroll() {
-    if (finishedScrollController.position.pixels ==
-        finishedScrollController.position.maxScrollExtent) {
-      if (hasMoreFinished && !isLoadingMoreFinished) {
-        _loadMoreFinishedCases();
+  void onScroll() {
+    if (scrollController.position.pixels ==
+        scrollController.position.maxScrollExtent) {
+      if (hasMoreRecords && !isLoadingMore) {
+        _loadMoreRecords();
       }
     }
   }
 
-  Future<void> _loadMoreFinishedCases() async {
+  Future<void> _loadMoreRecords() async {
     if (mounted) {
-      setState(() => isLoadingMoreFinished = true);
+      setState(() => isLoadingMore = true);
     }
-    finishedPage++;
-    await getFinishedCases();
+    pageNumber++;
+    await getActivitiesRecords();
     if (mounted) {
-      setState(() => isLoadingMoreFinished = false);
+      setState(() => isLoadingMore = false);
     }
   }
 
@@ -98,7 +98,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
               HeaderWidget(context, title: 'سجل النشاطات'),
               Padding(
                 padding: const EdgeInsets.only(top: 50.0),
-                child: buildFinishedCases(),
+                child: buildActivitiesRecords(),
               ),
             ],
           ),
@@ -107,7 +107,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
     );
   }
 
-  Widget buildFinishedCases() {
+  Widget buildActivitiesRecords() {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: RefreshIndicator(
@@ -115,10 +115,10 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
         backgroundColor: Colors.white,
         onRefresh: () async {
           setState(() {
-            finishedCases.clear();
-            finishedPage = 1;
+            activityRecord.clear();
+            pageNumber = 1;
             isInitialLoadingFinished = true;
-            getFinishedCases();
+            getActivitiesRecords();
           });
         },
         child: isInitialLoadingFinished
@@ -126,21 +126,21 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
             : sharedPrefsController.sessionTerminated()
             ? ReLoginWidget(context)
             : sharedPrefsController.getMustFillInfo()
-            ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', mustFillInfo: true)
-            : finishedCases.isEmpty
+            ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', errorOrWarning: true)
+            : activityRecord.isEmpty
             ? ListView(
           padding: EdgeInsets.fromLTRB(10.0, HomeCareSize.height(context) * 0.3, 10.0, 10.0),
           physics: const AlwaysScrollableScrollPhysics(),
-          children: [MessageWidget(text: 'لا توجد حالات منتهية')],
+          children: [MessageWidget(text: 'لا توجد حالات منتهية لعرض نشاطاتها')],
         )
             : ListView.builder(
-          controller: finishedScrollController,
+          controller: scrollController,
           padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 10.0),
-          itemCount: finishedCases.length + (hasMoreFinished ? 1 : 0),
+          itemCount: activityRecord.length + (hasMoreRecords ? 1 : 0),
           physics: const BouncingScrollPhysics(),
           itemBuilder: (context, index) {
-            if (index == finishedCases.length) {
-              if (finishedCases.length <= 10) {
+            if (index == activityRecord.length) {
+              if (activityRecord.length <= 10) {
                 return Center();
               } else {
                 return Center(
@@ -152,8 +152,8 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
               }
             }
 
-            var caseItem = finishedCases[index];
-            return FinishedScreenCard(
+            var caseItem = activityRecord[index];
+            return GeneralCaseCard(
               context,
               medicalServiceName: caseItem.medicalServiceName,
               patientName: caseItem.patientName,
@@ -163,6 +163,7 @@ class _ActivityLogScreenState extends State<ActivityLogScreen> {
               onPressed: () {
                 Navigator.push(context, MaterialPageRoute(builder: (context) => HealthRecordDetailsScreen(sessionId: caseItem.id)));
               },
+              isForNurseActivityRecord: true,
             );
           },
         ),

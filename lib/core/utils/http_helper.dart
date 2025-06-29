@@ -21,13 +21,12 @@ class HttpHelper {
   }) async {
     if (statusCode == 200) {
       return onSuccess();
-    } else if (statusCode == 401) {
+    } else if (statusCode == 401 && onUnauthorizedAdditional != null) {
       prefsController.terminateSession(true);
-      if (onUnauthorizedAdditional != null) {
-        return onUnauthorizedAdditional();
-      }
-      throw Exception('Unauthorized access');
+      return onUnauthorizedAdditional();
     } else if (statusCode == 410 && onGone != null) {
+      String message = responseBody['message'] ?? 'رمز التحقق منتهي';
+      prefsController.saveMSG(message: message);
       return onGone();
     } else if (statusCode == 404 && onParamNotFound != null) {
       String message = responseBody['message'] ?? 'أحد الحقول مطلوبة';
@@ -47,7 +46,7 @@ class HttpHelper {
       print('\x1B[33m<<<<<<<<<<  STATUS CODE  >>>>>>>>> : \x1B[34m$statusCode\x1B[0m');
       print('\x1B[33m<<<<<<<<<< RESPONSE BODY >>>>>>>>> : \x1B[34m$responseBody\x1B[0m');
       prefsController.saveMSG(message: 'حدث خطأ أثناء الاتصال .. الرجاء المحاولة لاحقاً');
-      return Future.value(false as T);
+      return Future.value('false' as T);
     }
   }
 
@@ -74,12 +73,11 @@ class HttpHelper {
           ? http.delete(url, headers: headers)
           : http.get(url, headers: headers)).timeout(const Duration(seconds: timeout));
 
-      // Print the status code
       debugPrint('Response Status Code: ${response.statusCode}');
 
-      // Print the raw response body for debugging
+      // The raw response body for debugging
       final responseBody = utf8.decode(response.bodyBytes);
-      debugPrint('Response Body: $responseBody');
+      //debugPrint('Response Body: $responseBody');
 
       // Attempt to parse the JSON response
       Map<String, dynamic> parsedBody;

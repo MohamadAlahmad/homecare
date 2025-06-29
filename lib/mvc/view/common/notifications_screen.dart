@@ -133,7 +133,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           : sharedPrefsController.sessionTerminated()
           ? ReLoginWidget(context)
           : sharedPrefsController.getMustFillInfo()
-          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الإشعارات', mustFillInfo: true)
+          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الإشعارات', errorOrWarning: true)
           : notifications.isEmpty
           ? ListView(
         padding: EdgeInsets.fromLTRB(10.0, HomeCareSize.height(context) * 0.3, 10.0, 10.0),

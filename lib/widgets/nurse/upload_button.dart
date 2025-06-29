@@ -46,8 +46,7 @@ class UploadButton extends StatelessWidget {
                 ],
               ),
             ),
-          )
-              : DashedBorder(
+          ) : DashedBorder(
             child: Padding(
               padding: EdgeInsets.symmetric(horizontal: 5.0),
               child: Center(

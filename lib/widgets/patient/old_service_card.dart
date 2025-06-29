@@ -1,3 +1,4 @@
+/*
 // ignore_for_file: non_constant_identifier_names
 
 import 'package:flutter/material.dart';
@@ -70,7 +71,7 @@ Widget ServiceCard(
                     ),
                     const Spacer(),
                     if (!isNutrition)
-                      Text('السعر $price ألف ',
+                      Text('السعر $price ل.س ',
                         style: const TextStyle(
                           fontSize: 12.0,
                           fontWeight: FontWeight.bold,
@@ -112,3 +113,4 @@ Widget ServiceCard(
     ),
   );
 }
+*/

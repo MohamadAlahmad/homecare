@@ -72,7 +72,7 @@ class _NursingServicesScreenState extends State<NursingServicesScreen> {
                         sharedPrefsController.terminateSession(true);
                         return ReLoginWidget(context);
                       } else if(snapshot.hasError) {
-                        return Center(child: Text('Error'));
+                        return MessageWidget(text: 'حدث خطأ أثناء جلب البيانات', errorOrWarning: true);
                       } else {
                         return buildUI(services: listOfServices);
                       }
@@ -83,7 +83,7 @@ class _NursingServicesScreenState extends State<NursingServicesScreen> {
             ),
           ),
           Positioned(
-            top: Platform.isIOS ? HomeCareSize.height(context) * 0.05 : HomeCareSize.height(context) * 0.03,
+            top: Platform.isIOS ? HomeCareSize.height(context) * 0.05 : HomeCareSize.height(context) * 0.0,
             right: 5.0,
             child: HeaderWidget(context, title: 'خدمات التمريض'),
           ),

@@ -8,6 +8,7 @@ Widget BriefDetailsCard({
   required String nurseName,
   required DateTime date,
   required String location,
+  int? visitDurationInHours,
 }) {
   String formattedDate = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
   return Container(
@@ -94,6 +95,22 @@ Widget BriefDetailsCard({
               child: Padding(
                 padding: const EdgeInsets.only(top: 5.0),
                 child: Text(location, style: TextStyle(fontSize: 14.0, color: Colors.black), maxLines: 3, overflow: TextOverflow.ellipsis),
+              ),
+            ),
+          ],
+        ),
+        if(visitDurationInHours != 0) Row(
+          children: [
+            Icon(Icons.numbers, color: Colors.grey, size: 20.0),
+            const SizedBox(width: 10.0),
+            Padding(
+              padding: const EdgeInsets.only(top: 5.0),
+              child: Text('ساعات الزيارة : ', style: TextStyle(fontSize: 14.0, color: Colors.grey)),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 5.0),
+                child: Text(visitDurationInHours.toString(), style: TextStyle(fontSize: 14.0, color: Colors.black), maxLines: 2, overflow: TextOverflow.ellipsis),
               ),
             ),
           ],

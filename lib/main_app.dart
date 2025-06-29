@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:homecare/core/middleware/auth_middleware.dart';
@@ -21,7 +23,8 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return Platform.isIOS
+        ? GetMaterialApp(
       debugShowCheckedModeBanner: false,
       builder: (context, child) {
         return MediaQuery(
@@ -47,6 +50,34 @@ class _MyAppState extends State<MyApp> {
       ],
       initialRoute: '/',
       initialBinding: Binding(),
+    ) : SafeArea(
+      child: GetMaterialApp(
+        debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          return MediaQuery(
+            data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(1.0)),
+            child: child!,
+          );
+        },
+        theme: ThemeData(
+          fontFamily: 'Tajawal',
+          primaryColor: HomeCareTheme.primaryColor,
+          textSelectionTheme: TextSelectionThemeData(
+            selectionColor: HomeCareTheme.primaryColor.withValues(alpha: 0.5),
+            selectionHandleColor: HomeCareTheme.primaryColor,
+          ),
+        ),
+        getPages: [
+          GetPage(name: '/', page: () => const SplashScreen()),
+          GetPage(name: '/main', page: () => const MainRegisterScreen(), middlewares: [AuthMiddleware()]),
+          GetPage(name: '/info', page: () => const MainInfoScreen()),
+          GetPage(name: '/home_nurse', page: () => const HomeNurse()),
+          GetPage(name: '/home_patient', page: () => HomePatient()),
+          GetPage(name: '/home_supporter', page: () => const MainScreenSupporter()),
+        ],
+        initialRoute: '/',
+        initialBinding: Binding(),
+      ),
     );
   }
 }

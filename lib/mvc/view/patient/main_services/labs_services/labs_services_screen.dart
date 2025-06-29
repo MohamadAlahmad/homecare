@@ -35,7 +35,6 @@ class _LabsServicesScreenState extends State<LabsServicesScreen> {
   Future<List<MedicalService>> getServices() async {
     String token = sharedPrefsController.getToken();
     var response = await ConnectionController.getServices(token: token, medicalServiceTypeId: 5);
-    debugPrint('Fetched Services: $response'); // Print the fetched services
     return response;
   }
 
@@ -81,7 +80,7 @@ class _LabsServicesScreenState extends State<LabsServicesScreen> {
                         sharedPrefsController.terminateSession(true);
                         return ReLoginWidget(context);
                       } else if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}')); // Display the error message
+                        return MessageWidget(text: 'حدث خطأ أثناء جلب البيانات', errorOrWarning: true);
                       } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                         return MessageWidget(text: 'لا توجد خدمات');
                       } else {
@@ -94,7 +93,7 @@ class _LabsServicesScreenState extends State<LabsServicesScreen> {
             ),
           ),
           Positioned(
-            top: Platform.isIOS ? HomeCareSize.height(context) * 0.05 : HomeCareSize.height(context) * 0.03,
+            top: Platform.isIOS ? HomeCareSize.height(context) * 0.05 : HomeCareSize.height(context) * 0.0,
             right: 5.0,
             child: HeaderWidget(context, title: 'خدمات المخبر', color: Colors.white, iconColor: Colors.white),
           ),
@@ -118,7 +117,6 @@ class _LabsServicesScreenState extends State<LabsServicesScreen> {
           imageUrl: services[i].imageUrl, // Pass the imageUrl
           price: services[i].price,
           onClick: () {
-            debugPrint(services[i].id.toString());
             showModalBottomSheet(
               context: context,
               showDragHandle: true,

@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/themes.dart';
+import 'package:homecare/core/utils/api.dart';
 import 'package:homecare/core/utils/globals.dart';
 
 class ServiceCard extends StatefulWidget {
@@ -33,8 +34,7 @@ class _ServiceCardState extends State<ServiceCard> {
   @override
   void initState() {
     super.initState();
-    const String baseUrl = 'http://185.158.94.162:8080/';
-    _completeImageUrl = '$baseUrl${widget.imageUrl}';
+    _completeImageUrl = '${HomeCareApi.baseUrl}/${widget.imageUrl}';
   }
 
   @override
@@ -90,7 +90,7 @@ class _ServiceCardState extends State<ServiceCard> {
                       ),
                       const Spacer(),
                       if (!widget.isNutrition)
-                        Text('السعر ${widget.price} ألف ',
+                        Text('السعر ${widget.price} ل.س ',
                           style: const TextStyle(
                             fontSize: 12.0,
                             fontWeight: FontWeight.bold,
@@ -120,6 +120,7 @@ class _ServiceCardState extends State<ServiceCard> {
                   _completeImageUrl,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
+                    print(error);
                     if (!_hasError) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (mounted) {

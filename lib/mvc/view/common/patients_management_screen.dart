@@ -1,5 +1,3 @@
-//ignore_for_file: use_build_context_synchronously
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
@@ -80,30 +78,11 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
                                       name: '${patient.firstName} ${patient.lastName}',
                                       address: patient.locationDetails,
                                       onDelete: () async {
-                                        bool isDeleting = false;
-                                        HomeCareStyle.showCustomDialog(
+                                        HomeCareStyle.showHomeCareDialog(
                                           context,
                                           title: 'تأكيد الحذف',
-                                          buttonTitle: 'حذف',
-                                          content: StatefulBuilder(
-                                            builder: (context, setState) {
-                                              return Column(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text('هل أنت متأكد أنك تريد حذف المريض ؟'),
-                                                  if (isDeleting)
-                                                    Padding(
-                                                      padding: const EdgeInsets.only(top: 16.0),
-                                                      child: HCCPI(color: HomeCareTheme.primaryColorBold, size: 25.0),
-                                                    ),
-                                                ],
-                                              );
-                                            },
-                                          ),
-                                          onYesPressed: () async {
-                                            setState(() {
-                                              isDeleting = true;
-                                            });
+                                          content: 'هل أنت متأكد أنك تريد حذف المريض ؟',
+                                          onOk: () async {
                                             print('ID is : ${patient.id}');
                                             var result = await ConnectionController.deletePatient(
                                               token: sharedPrefsController.getToken(),
@@ -113,24 +92,26 @@ class _PatientsManagementScreenState extends State<PatientsManagementScreen> {
                                               setState(() {
                                                 getPatients();
                                               });
-                                              if (!mounted) return; // Check if the widget is still mounted
+                                              if (!mounted) return;
                                               HomeCareStyle.showSnackBar(
                                                 context,
                                                 success: true,
                                                 content: 'تم الحذف بنجاح',
                                                 icon: Icons.check_circle,
                                               );
+                                              Navigator.pop(context);
                                             } else {
-                                              if (!mounted) return; // Check if the widget is still mounted
+                                              if (!mounted) return;
                                               HomeCareStyle.showSnackBar(
                                                 context,
                                                 content: sharedPrefsController.getMSG(),
                                                 icon: Icons.info_outline,
                                               );
                                             }
-                                            //Navigator.of(context).pop(); // Close the dialog
                                           },
-                                          buttonColor: Colors.red,
+                                          onOkColor: HomeCareTheme.redColor,
+                                          onCancelColor: HomeCareTheme.primaryColor,
+                                          width: HomeCareSize.width(context),
                                         );
                                       },
                                     );

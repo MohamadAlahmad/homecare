@@ -1,5 +1,3 @@
-//ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -137,74 +135,34 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
                 ? '(العنوان فارغ)'
                 : listOfPatients[index].locationDetails,
             onPressed: () {
-              bool isLoading = false;
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext dialogContext) {
-                  return StatefulBuilder(
-                    builder: (context, setStateDialog) {
-                      return Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: AlertDialog(
-                          title: isLoading
-                              ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
-                              : Text('الانتقال إلى حساب المريض '),
-                          content: isLoading ? SizedBox.shrink() : Text('أنت على وشك فتح التطبيق كحساب المريض ${listOfPatients[index].firstName} ${listOfPatients[index].lastName} !'),
-                          actions: <Widget>[
-                            if (!isLoading)
-                              SizedBox(
-                                width: 120.0,
-                                child: IconButton(
-                                  onPressed: () async {
-                                    setStateDialog(() => isLoading = true);
-                                    var result = await ConnectionController.switchAccount(
-                                      token: sharedPrefsController.getToken(),
-                                      patientId: listOfPatients[index].id,
-                                    );
-                                    Navigator.of(dialogContext).pop();
-                                    if (result == 'true') {
-                                      sharedPrefsController.saveUserType(type: 2);
-                                      if (context.mounted) {
-                                        sharedPrefsController.setIsSubUser(value: true);
-                                        Navigator.of(context).pushAndRemoveUntil(
-                                          MaterialPageRoute(builder: (context) => HomePatient()),
-                                              (Route<dynamic> route) => false,
-                                        );
-                                      }
-                                    } else {
-                                      debugPrint('ERROR __________________________');
-                                      HomeCareStyle.showSnackBar(
-                                        context,
-                                        content: 'فشل تحويل الحساب ، حاول لاحقاً',
-                                        icon: CupertinoIcons.exclamationmark_triangle_fill,
-                                      );
-                                    }
-                                  },
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: Colors.green.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('تأكيد', style: TextStyle(color: Colors.green, fontSize: 14.0)),
-                                ),
-                              ),
-                            if (!isLoading)
-                              SizedBox(
-                                width: 100.0,
-                                child: IconButton(
-                                  onPressed: () => Navigator.of(dialogContext).pop(),
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: Colors.red.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('تراجع', style: TextStyle(color: Colors.red, fontSize: 14.0)),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
+              HomeCareStyle.showHomeCareDialog(
+                context,
+                width: HomeCareSize.width(context),
+                title: 'الانتقال إلى حساب مريض',
+                content: 'أنت على وشك الانتقال إلى حساب المريض ${listOfPatients[index].firstName} ${listOfPatients[index].lastName} !',
+                onOk: () async {
+                  var result = await ConnectionController.switchAccount(
+                    token: sharedPrefsController.getToken(),
+                    patientId: listOfPatients[index].id,
                   );
+                  Navigator.of(context).pop();
+                  if (result == 'true') {
+                    sharedPrefsController.saveUserType(type: 2);
+                    if (context.mounted) {
+                      sharedPrefsController.setIsSubUser(value: true);
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => HomePatient()),
+                            (Route<dynamic> route) => false,
+                      );
+                    }
+                  } else {
+                    debugPrint('ERROR __________________________');
+                    HomeCareStyle.showSnackBar(
+                      context,
+                      content: 'فشل تحويل الحساب ، حاول لاحقاً',
+                      icon: CupertinoIcons.exclamationmark_triangle_fill,
+                    );
+                  }
                 },
               );
             },
@@ -249,7 +207,7 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
           : sharedPrefsController.sessionTerminated()
           ? ReLoginWidget(context)
           : sharedPrefsController.getMustFillInfo()
-          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', mustFillInfo: true)
+          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', errorOrWarning: true)
           : acceptedCases.isEmpty
           ? ListView(
         padding: EdgeInsets.fromLTRB(10.0, HomeCareSize.height(context) * 0.2, 10.0, 10.0),
@@ -285,81 +243,41 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
             visitDate: caseItem.visitDate,
             address: '${caseItem.geocodedAddress!.governorateDto.name} ${caseItem.geocodedAddress!.regionDto.name} ${caseItem.geocodedAddress!.details}',
             onCancel: () {
-              bool isLoading = false;
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext dialogContext) {
-                  return StatefulBuilder(
-                    builder: (context, setStateDialog) {
-                      return Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: AlertDialog(
-                          title: isLoading
-                              ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
-                              : Text('إلغاء الطلب'),
-                          content: isLoading ? SizedBox.shrink() : Text('هل أنت متأكد ؟'),
-                          actions: <Widget>[
-                            if (!isLoading)
-                              SizedBox(
-                                width: 120.0,
-                                child: IconButton(
-                                  onPressed: () async {
-                                    setStateDialog(() => isLoading = true);
-                                    var result = await ConnectionController.cancelCase(
-                                      token: sharedPrefsController.getToken(),
-                                      caseId: caseItem.id,
-                                    );
-                                    Navigator.of(dialogContext).pop();
-                                    if (sharedPrefsController.sessionTerminated()) {
-                                      HomeCareStyle.showReLoginDialog(context);
-                                    } else if (result) {
-                                      HomeCareStyle.showSnackBar(
-                                        context,
-                                        success: true,
-                                        content: 'تم إلغاء الطلب بنجاح',
-                                        icon: Icons.check_circle,
-                                      );
-
-                                      setState(() {
-                                        acceptedCases.clear();
-                                        acceptedPage = 1;
-                                        isInitialLoadingAccepted = true;
-                                        getAcceptedCases();
-                                      });
-                                    } else {
-                                      HomeCareStyle.showSnackBar(
-                                        context,
-                                        content: sharedPrefsController.getMSG(),
-                                        icon: Icons.info_outline,
-                                      );
-                                    }
-                                  },
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: Colors.red.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('إلغاء الطلب', style: TextStyle(color: Colors.red, fontSize: 14.0)),
-                                ),
-                              ),
-                            if (!isLoading)
-                              SizedBox(
-                                width: 100.0,
-                                child: IconButton(
-                                  onPressed: () => Navigator.of(dialogContext).pop(),
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('تراجع', style: TextStyle(color: HomeCareTheme.primaryColorBold, fontSize: 14.0)),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
+              HomeCareStyle.showHomeCareDialog(
+                context,
+                title: 'إلغاء الطلب',
+                content: 'هل أنت متأكد ؟',
+                onOk: () async {
+                  var result = await ConnectionController.cancelCase(
+                    token: sharedPrefsController.getToken(),
+                    caseId: caseItem.id,
                   );
+                  Navigator.of(context).pop();
+                  if (sharedPrefsController.sessionTerminated()) {
+                    HomeCareStyle.showReLoginDialog(context);
+                  } else if (result) {
+                    HomeCareStyle.showSnackBar(
+                      context,
+                      success: true,
+                      content: 'تم إلغاء الطلب بنجاح',
+                      icon: Icons.check_circle,
+                    );
+
+                    setState(() {
+                      acceptedCases.clear();
+                      acceptedPage = 1;
+                      isInitialLoadingAccepted = true;
+                      getAcceptedCases();
+                    });
+                  } else {
+                    HomeCareStyle.showSnackBar(
+                      context,
+                      content: sharedPrefsController.getMSG(),
+                      icon: Icons.info_outline,
+                    );
+                  }
                 },
+                onOkTitle: 'إلغاء الطلب',
               );
             },
             onPressed: () {
@@ -381,6 +299,7 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
                     forLabService: caseItem.labTests!.isNotEmpty,
                     labTests: labTests,
                     lab: caseItem.lab,
+                    visitDurationInHours: caseItem.visitDurationInHours,
                   ),
                 ),
               ).then((_) {
@@ -398,4 +317,5 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
       ),
     );
   }
+
 }

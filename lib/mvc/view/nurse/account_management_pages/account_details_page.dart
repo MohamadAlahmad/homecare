@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -76,18 +77,52 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
   List<bool> fileLoadingStates = List.filled(6, false); // Track loading state for each file
 
   Future<void> pickFile(int fileIndex) async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles();
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
+    PermissionStatus status;
 
-    if (result != null) {
-      setState(() {
-        filePaths[fileIndex] = result.files.single.path;
-        fileNames[fileIndex] = result.files.single.name;
-        fileLoadingStates[fileIndex] = true; // Set loading state to true
-      });
-      await uploadAttachment(fileIndex);
-      setState(() {
-        fileLoadingStates[fileIndex] = false; // Set loading state to false after upload
-      });
+    if (sdkInt >= 33) {
+      // For Android 13 and above, use READ_MEDIA_IMAGES or appropriate permission
+      status = await Permission.photos.request();
+    } else {
+      // For Android 12 and below, use READ_EXTERNAL_STORAGE
+      status = await Permission.storage.request();
+    }
+
+    if (status.isGranted) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      if (result != null) {
+        setState(() {
+          filePaths[fileIndex] = result.files.single.path;
+          fileNames[fileIndex] = result.files.single.name;
+          fileLoadingStates[fileIndex] = true; // Set loading state to true
+        });
+        await uploadAttachment(fileIndex);
+        setState(() {
+          fileLoadingStates[fileIndex] = false; // Set loading state to false after upload
+        });
+      }
+    } else if (status.isDenied) {
+      Fluttertoast.showToast(
+        msg: "الرجاء السماح بالوصول إلى التخزين لاختيار ملف",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } else if (status.isPermanentlyDenied) {
+      Fluttertoast.showToast(
+        msg: "تم رفض الوصول إلى التخزين بشكل دائم. يرجى تمكين الأذن من إعدادات التطبيق.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      await openAppSettings();
     }
   }
 
@@ -188,16 +223,52 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
   }
 
   Future<void> pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
 
-    if (result != null) {
-      setState(() {
-        profileImagePath = result.files.single.path; // Updated to profileImagePath
-      });
-      uploadProfileImage(profileImagePath!);
+    PermissionStatus status;
+
+    if (sdkInt >= 33) {
+      // For Android 13 and above, use READ_MEDIA_IMAGES
+      status = await Permission.photos.request();
+    } else {
+      // For Android 12 and below, use READ_EXTERNAL_STORAGE
+      status = await Permission.storage.request();
+    }
+
+    if (status.isGranted) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result != null) {
+        setState(() {
+          profileImagePath = result.files.single.path;
+        });
+        uploadProfileImage(profileImagePath!);
+      }
+    } else if (status.isDenied) {
+      Fluttertoast.showToast(
+        msg: "الرجاء السماح بالوصول إلى التخزين لاختيار صورة",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } else if (status.isPermanentlyDenied) {
+      Fluttertoast.showToast(
+        msg: "تم رفض الوصول إلى التخزين بشكل دائم. يرجى تمكين الأذن من إعدادات التطبيق.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      await openAppSettings();
     }
   }
 
@@ -252,7 +323,7 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
     genderValue = sharedPrefsController.getGender();
     if (genderValue == 0) genderValue = 1;
     selectedGender = genderValue == 2 ? 'أنثى' : 'ذكر';
-    phoneCtrl.text = '0${sharedPrefsController.getMobileNumber()}';
+    phoneCtrl.text = '${sharedPrefsController.getMobileNumber()}+';
     alterPhoneCtrl.text = sharedPrefsController.getAltMobileNumber();
     birthDate = sharedPrefsController.getBirthDate();
     addressCtrl.text = sharedPrefsController.getAddressDetails();
@@ -300,11 +371,8 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
           (region) => selectedRegionId == region.id,
       orElse: () => Region(id: 0, name: ''), //fallback region
     ).name;
-
     debugPrint('city    ===> $selectedCity');
     debugPrint('Region  ===> $selectedRegion');
-    print('Initial Method');
-    print('Length : ${fileIds.length}');
     for(int i = 0; i< fileIds.length; i++) {
       print('[${fileIds[i]}] -');
     }
@@ -600,8 +668,8 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
                                 builder: (BuildContext context, Widget? child) {
                                   return Theme(
                                     data: ThemeData.light().copyWith(
-                                      colorScheme: const ColorScheme.light(primary: HomeCareTheme.primaryColor), // Text color
-                                      buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary), // Button text color
+                                      colorScheme: const ColorScheme.light(primary: HomeCareTheme.primaryColor),
+                                      buttonTheme: const ButtonThemeData(textTheme: ButtonTextTheme.primary),
                                     ),
                                     child: child!,
                                   );
@@ -707,14 +775,6 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
         loading = true;
       });
 
-      debugPrint('First name  : ${nameCtrl.text}');
-      debugPrint('Last name   : ${lastNameCtrl.text}');
-      debugPrint('Date Birth  : $birthDate');
-      debugPrint('Alt Phone   : ${alterPhoneCtrl.text}');
-      debugPrint('Gender      : $genderValue');
-      debugPrint('Region Id   : $selectedRegionId');
-      debugPrint('Profile Image Id   : ${sharedPrefsController.getIdOfProfileImage()}');
-      debugPrint('attachments length : ${fileIds.length}'); // Debug print the actual attachments length
       String token = sharedPrefsController.getToken();
       var result = await ConnectionController.updateNursePersonalInfo(
         firstName: nameCtrl.text,
@@ -725,7 +785,7 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
         alternativePhoneNumber: alterPhoneCtrl.text,
         gender: genderValue,
         personalImageId: sharedPrefsController.getIdOfProfileImage(),
-        attachmentIds: fileIds, // Pass the actual attachments list
+        attachmentIds: fileIds,
         latitude: latitude,
         longitude: longitude,
         regionId: selectedRegionId,

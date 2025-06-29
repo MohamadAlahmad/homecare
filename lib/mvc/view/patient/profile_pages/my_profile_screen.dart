@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -83,16 +84,52 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
   }
 
   Future<void> pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
 
-    if (result != null) {
-      setState(() {
-        imagePath = result.files.single.path;
-      });
-      uploadImage(imagePath!);
+    PermissionStatus status;
+
+    if (sdkInt >= 33) {
+      // For Android 13 and above, use READ_MEDIA_IMAGES
+      status = await Permission.photos.request();
+    } else {
+      // For Android 12 and below, use READ_EXTERNAL_STORAGE
+      status = await Permission.storage.request();
+    }
+
+    if (status.isGranted) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result != null) {
+        setState(() {
+          imagePath = result.files.single.path;
+        });
+        uploadImage(imagePath!);
+      }
+    } else if (status.isDenied) {
+      Fluttertoast.showToast(
+        msg: "الرجاء السماح بالوصول إلى التخزين لاختيار صورة",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } else if (status.isPermanentlyDenied) {
+      Fluttertoast.showToast(
+        msg: "تم رفض الوصول إلى التخزين بشكل دائم. يرجى تمكين الأذن من إعدادات التطبيق.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      await openAppSettings();
     }
   }
 
@@ -457,7 +494,7 @@ class _MyProfileScreenState extends State<MyProfileScreen> {
     genderValue = sharedPrefsController.getGender();
     if(genderValue == 0) genderValue = 1;
     selectedGender = genderValue == 2 ? 'أنثى' : 'ذكر';
-    phoneCtrl.text = '0${sharedPrefsController.getMobileNumber()}';
+    phoneCtrl.text = '${sharedPrefsController.getMobileNumber()}+';
     alterPhoneCtrl.text = sharedPrefsController.getAltMobileNumber();
     birthDate = sharedPrefsController.getBirthDate();
     addressCtrl.text = sharedPrefsController.getAddressDetails();

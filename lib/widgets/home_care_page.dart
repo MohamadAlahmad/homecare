@@ -1,7 +1,8 @@
 // ignore_for_file: use_build_context_synchronously
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/mvc/view/common/notifications_screen.dart';
 import 'package:homecare/mvc/view/supporter/add_patient_by_supporter_screen.dart';
@@ -54,11 +55,11 @@ class _HomeCarePageState extends State<HomeCarePage> {
           child: Directionality(
             textDirection: TextDirection.rtl,
             child: Container(
-              padding: const EdgeInsets.only(
+              padding: EdgeInsets.only(
                 left: 5.0,
                 right: 5.0,
                 bottom: 5.0,
-                top: 35.0,
+                top: Platform.isIOS ? 35.0 : 20.0,
               ),
               decoration: BoxDecoration(
                 color: HomeCareTheme.primaryColor,

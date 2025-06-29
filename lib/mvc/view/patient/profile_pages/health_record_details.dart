@@ -1,5 +1,3 @@
-//ignore_for_file: constant_identifier_names, non_constant_identifier_names, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
@@ -8,6 +6,7 @@ import 'package:homecare/mvc/model/api/health_record_model.dart';
 import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
 import 'package:homecare/widgets/custom_item_card.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
+import 'package:homecare/widgets/dashed_border.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/menu_text.dart';
 import 'package:homecare/widgets/message_widget.dart';
@@ -41,6 +40,8 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
     super.initState();
   }
 
+  num finalLabServicePrice = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -65,13 +66,19 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return HCCPI(color: HomeCareTheme.primaryColor);
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return MessageWidget(text: 'حدث خطأ أثناء جلب البيانات', errorOrWarning: true);
         } else if(sharedPrefsController.sessionTerminated()) {
           return ReLoginWidget(context);
         } else if (!snapshot.hasData) {
           return MessageWidget(text: 'البيانات فارغة');
         } else {
           var healthRecord = snapshot.data!;
+          for(int i = 0; i < healthRecord.labTests.length; i++) {
+            finalLabServicePrice += healthRecord.labTests[i].price;
+          }
+          var semiFinal = healthRecord.visitDurationInHours != 0
+              ? healthRecord.visitCase!.basicServicePrice! * healthRecord.visitDurationInHours
+              :healthRecord.visitCase!.finalPrice!;
           return Directionality(
             textDirection: TextDirection.rtl,
             child: SingleChildScrollView(
@@ -128,7 +135,7 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                       fontSize: 14.0,
                       maxLines: 1,
                       fillColor: HomeCareTheme.primaryColor.withValues(alpha: 0.05),
-                      enabled: true,
+                      enabled: false,
                     ),
                   ),
                   if(healthRecord.labTests.isNotEmpty) const SizedBox(height: 10.0),
@@ -138,21 +145,22 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                     child: Scrollbar(
                       thumbVisibility: true,
                       controller: scrollController,
-                      child: ListView(
+                      child: ListView.builder(
+                        itemCount: healthRecord.labTests.length,
                         physics: const BouncingScrollPhysics(),
-                        padding: EdgeInsets.all(10.0),
                         scrollDirection: Axis.horizontal,
                         controller: scrollController,
-                        children: [
-                          for (var labTest in healthRecord.labTests)
-                            CustomItemCard(
-                              id: labTest.id,
-                              title: labTest.name,
-                              value: labTest.price,
-                              isSelected: false,
-                              forLabTest: true,
-                            ),
-                        ],
+                        itemBuilder: (context, i) {
+                          var labTest = healthRecord.labTests[i];
+                          return CustomItemCard(
+                            id: labTest.id,
+                            title: labTest.name,
+                            value: labTest.price,
+                            isSelected: false,
+                            forLabTest: true,
+                            imagePath: 'assets/icons/labTest.png',
+                          );
+                        },
                       ),
                     ),
                   ),
@@ -171,6 +179,7 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                             value: healthRecord.lab!.rate!,
                             isSelected: false,
                             forLabTest: false,
+                            imagePath: 'assets/icons/lab.png',
                           ),
                         ),
                       ],
@@ -190,7 +199,7 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                             fontSize: 14.0,
                             maxLines: 1,
                             fillColor: HomeCareTheme.primaryColor.withValues(alpha: 0.05),
-                            enabled: true,
+                            enabled: false,
                           ),
                         ),
                       ),
@@ -252,15 +261,33 @@ class _HealthRecordDetailsScreenState extends State<HealthRecordDetailsScreen> {
                           padding: const EdgeInsets.only(left: 10.0),
                           child: CustomTextField(
                             context,
-                            controller: TextEditingController(text: '${healthRecord.visitCase!.finalPrice!} ل.س'),
+                            controller: TextEditingController(
+                              text: healthRecord.visitDurationInHours != 0
+                                  ? '${semiFinal + healthRecord.visitCase!.additionalFeesPrice! + finalLabServicePrice} ل.س'
+                                  : '${healthRecord.visitCase!.finalPrice! + finalLabServicePrice} ل.س',
+                            ),
                             fontSize: 14.0,
                             maxLines: 1,
                             fillColor: HomeCareTheme.primaryColor.withValues(alpha: 0.05),
-                            enabled: true,
+                            enabled: false,
                           ),
                         ),
                       ),
                     ],
+                  ),
+                  const SizedBox(height: 50.0),
+                  if(healthRecord.labTests.isNotEmpty) SizedBox(
+                    height: 100.0,
+                    child: Padding(
+                      padding: const EdgeInsets.all(10.0),
+                      child: DashedBorder(
+                        child: Center(
+                          child: !healthRecord.attachmentsAdded
+                              ? Text('لم يتم تحميل صورة نتيجة التحليل بعد', style: TextStyle(fontSize: 14.0, color: Colors.grey[600]))
+                              : Text('تم تحميل الصورة'),
+                        ),
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 50.0),
                 ],

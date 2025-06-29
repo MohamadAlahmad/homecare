@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously, non_constant_identifier_names
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -79,7 +80,7 @@ class _FirstCodeScreenState extends State<FirstCodeScreen> {
           FocusScope.of(context).unfocus();
         },
         child: Container(
-          margin: EdgeInsets.only(left: 10.0, right: 10.0, top: Get.height * 0.05, bottom: Get.height * 0.03),
+          margin: EdgeInsets.only(left: 10.0, right: 10.0, top: Platform.isIOS ? HomeCareSize.height(context) * 0.05 : HomeCareSize.height(context) * 0.01, bottom: Get.height * 0.03),
           child: Stack(
             children: [
               Positioned(

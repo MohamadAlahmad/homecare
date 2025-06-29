@@ -2,6 +2,7 @@
 
 import 'dart:io';
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -74,16 +75,52 @@ class _PersonalProfileScreenState extends State<PersonalProfileScreen> {
   }
 
   Future<void> pickImage() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
 
-    if (result != null) {
-      setState(() {
-        imagePath = result.files.single.path;
-      });
-      uploadImage(imagePath!);
+    PermissionStatus status;
+
+    if (sdkInt >= 33) {
+      // For Android 13 and above, use READ_MEDIA_IMAGES
+      status = await Permission.photos.request();
+    } else {
+      // For Android 12 and below, use READ_EXTERNAL_STORAGE
+      status = await Permission.storage.request();
+    }
+
+    if (status.isGranted) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        allowMultiple: false,
+      );
+
+      if (result != null) {
+        setState(() {
+          imagePath = result.files.single.path;
+        });
+        uploadImage(imagePath!);
+      }
+    } else if (status.isDenied) {
+      Fluttertoast.showToast(
+        msg: "الرجاء السماح بالوصول إلى التخزين لاختيار صورة",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } else if (status.isPermanentlyDenied) {
+      Fluttertoast.showToast(
+        msg: "تم رفض الوصول إلى التخزين بشكل دائم. يرجى تمكين الأذن من إعدادات التطبيق.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      await openAppSettings();
     }
   }
 

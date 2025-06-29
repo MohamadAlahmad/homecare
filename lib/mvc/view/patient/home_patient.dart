@@ -3,14 +3,15 @@ import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
+import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/view/nurse/home_nurse.dart';
 import 'package:homecare/mvc/view/patient/main_screen_patient.dart';
 import 'package:homecare/mvc/view/patient/profile_patient_screen.dart';
 import 'package:homecare/mvc/view/patient/reservations_screen.dart';
-import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
 import 'package:sliding_clipped_nav_bar/sliding_clipped_nav_bar.dart';
 
 PageController pagePatientController = PageController(initialPage: selectedPIndex);
@@ -72,71 +73,31 @@ class _HomePatientState extends State<HomePatient> {
       child: Scaffold(
         floatingActionButton: sharedPrefsController.isSubUser() ? FloatingActionButton(
           onPressed: () {
-            bool isLoading = false;
-            showDialog(
-              context: context,
-              barrierDismissible: false,
-              builder: (BuildContext dialogContext) {
-                return StatefulBuilder(
-                  builder: (context, setStateDialog) {
-                    return Directionality(
-                      textDirection: TextDirection.rtl,
-                      child: AlertDialog(
-                        title: isLoading
-                            ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
-                            : Text('الرجوع إلى الحساب'),
-                        content: isLoading ? SizedBox.shrink() : Text('هل تريد الرجوع إلى حسابك الأساسي ؟'),
-                        actions: <Widget>[
-                          if (!isLoading)
-                            SizedBox(
-                              width: 120.0,
-                              child: IconButton(
-                                onPressed: () async {
-                                  setStateDialog(() => isLoading = true);
-                                  sharedPrefsController.setIsSubUser(value: false);
-                                  String previousToken = sharedPrefsController.getMainUserToken();
-                                  sharedPrefsController.saveToken(token: previousToken);
-                                  if(sharedPrefsController.getMainUserType() == 2) {
-                                    sharedPrefsController.saveUserType(type: 2);
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                      MaterialPageRoute(builder: (context) =>
-                                          HomePatient()),
-                                          (Route<dynamic> route) => false,
-                                    );
-                                  } else {
-                                    sharedPrefsController.saveUserType(type: 3);
-                                    Navigator.of(context).pushAndRemoveUntil(
-                                      MaterialPageRoute(builder: (context) =>
-                                          HomeNurse()),
-                                          (Route<dynamic> route) => false,
-                                    );
-                                  }
-                                },
-                                style: IconButton.styleFrom(
-                                  elevation: 0.0,
-                                  backgroundColor: Colors.green.withValues(alpha: 0.1),
-                                ),
-                                icon: Text('تأكيد', style: TextStyle(color: Colors.green, fontSize: 14.0)),
-                              ),
-                            ),
-                          if (!isLoading)
-                            SizedBox(
-                              width: 100.0,
-                              child: IconButton(
-                                onPressed: () => Navigator.of(dialogContext).pop(),
-                                style: IconButton.styleFrom(
-                                  elevation: 0.0,
-                                  backgroundColor: Colors.red.withValues(alpha: 0.1),
-                                ),
-                                icon: Text('تراجع', style: TextStyle(color: Colors.red, fontSize: 14.0)),
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                );
+            HomeCareStyle.showHomeCareDialog(
+              context,
+              title: 'الرجوع إلى الحساب',
+              content: 'هل تريد الرجوع إلى حسابك الأساسي ؟',
+              onOk: () {
+                sharedPrefsController.setIsSubUser(value: false);
+                String previousToken = sharedPrefsController.getMainUserToken();
+                sharedPrefsController.saveToken(token: previousToken);
+                if(sharedPrefsController.getMainUserType() == 2) {
+                  sharedPrefsController.saveUserType(type: 2);
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) =>
+                        HomePatient()),
+                        (Route<dynamic> route) => false,
+                  );
+                } else {
+                  sharedPrefsController.saveUserType(type: 3);
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) =>
+                        HomeNurse()),
+                        (Route<dynamic> route) => false,
+                  );
+                }
               },
+              width: HomeCareSize.width(context),
             );
           },
           backgroundColor: HomeCareTheme.primaryColorBold,

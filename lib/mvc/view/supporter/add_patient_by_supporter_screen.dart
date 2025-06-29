@@ -1,5 +1,3 @@
-// ignore_for_file: non_constant_identifier_names, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
@@ -7,7 +5,6 @@ import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/model/api/nurse.dart';
-import 'package:homecare/mvc/view/supporter/personal_profile_screen.dart';
 import 'package:homecare/widgets/buttons.dart';
 import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
@@ -194,14 +191,14 @@ class _AddPatientBySupporterScreenState extends State<AddPatientBySupporterScree
       });
       if (sharedPrefsController.sessionTerminated()) {
         HomeCareStyle.showReLoginDialog(context);
-      } else if (result == 'false') {
+      } else if (result == 'true') {
         HomeCareStyle.showSnackBar(
           context,
           success: true,
           content: 'تم الطلب بنجاح',
           icon: Icons.check_circle,
         );
-        Navigator.pop(context);
+        Navigator.pop(context, result);
       } else if (result == 'complete-info') {
         HomeCareStyle.showSnackBar(
           context,
@@ -271,6 +268,8 @@ class _AddPatientBySupporterScreenState extends State<AddPatientBySupporterScree
                     title: '${nurse.firstName} ${nurse.lastName}',
                     value: nurse.rate,
                     isSelected: nurse.isSelected,
+                    disableStars: true,
+                    imagePath: '',
                   ),
                 );
               },

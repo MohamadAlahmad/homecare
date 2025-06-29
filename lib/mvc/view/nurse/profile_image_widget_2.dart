@@ -15,22 +15,20 @@ class ProfileImageWidget extends StatefulWidget {
 }
 
 class _ProfileImageWidgetState extends State<ProfileImageWidget> {
-
-  //late Future<String> _imageUrlFuture;
+  late Future<String> _imageUrlFuture;
   bool _hasError = false;
 
   @override
   void initState() {
-    print('======= Gender now is -----> ${widget.sharedPrefsController.getGender()}');
-    // Initialize the future in initState to avoid recreating it on every build
-    //_imageUrlFuture = Future.value(widget.sharedPrefsController.getProfileImageUrl());
     super.initState();
+    // Initialize the future in initState to avoid recreating it on every build
+    _imageUrlFuture = Future.value(widget.sharedPrefsController.getProfileImageUrl());
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<String>(
-      future: /*_imageUrlFuture*/ Future.value(widget.sharedPrefsController.getProfileImageUrl()),
+      future: _imageUrlFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return HCCPI(color: HomeCareTheme.primaryColor);

@@ -21,72 +21,90 @@ class ReservationsScreen extends StatefulWidget {
 }
 
 class _ReservationsScreenState extends State<ReservationsScreen> {
-  SharedPrefsController sharedPrefsController = SharedPrefsController();
-  late Future<List<Reservation>> reservationsFuture;
-
-  // Pagination variables
-  int currentPage = 1;
-  bool hasMoreData = true;
-  bool isLoadingMore = false;
-  List<Reservation> reservations = [];
-
-  // Scroll controller for pagination
+  final SharedPrefsController sharedPrefsController = SharedPrefsController();
   final ScrollController scrollController = ScrollController();
+
+  List<Reservation> reservations = [];
+  int currentPage = 1;
+  bool isLoading = false;
+  bool isInitialLoading = true;
+  bool hasMoreData = true;
+  bool isError = false;
 
   @override
   void initState() {
-    reservationsFuture = getReservations();
-    scrollController.addListener(scrollListener); // Add scroll listener
     super.initState();
+    _loadInitialReservations();
+    scrollController.addListener(_scrollListener);
   }
 
   @override
   void dispose() {
-    scrollController.dispose(); // Dispose the controller
+    scrollController.dispose();
     super.dispose();
   }
 
-  // Fetch reservations with pagination
-  Future<List<Reservation>> getReservations({int pageNumber = 1}) async {
-    return await ConnectionController.getOwnReservations(
-      token: sharedPrefsController.getToken(),
-      pageNumber: pageNumber,
-    );
-  }
-
-  // Scroll listener to detect end of list
-  void scrollListener() {
-    if (scrollController.position.pixels == scrollController.position.maxScrollExtent) {
-      if (hasMoreData && !isLoadingMore) {
-        _loadMoreReservations();
+  Future<void> _loadInitialReservations() async {
+    try {
+      setState(() => isInitialLoading = true);
+      final initialReservations = await _fetchReservations(page: 1);
+      setState(() {
+        reservations = initialReservations;
+        hasMoreData = initialReservations.isNotEmpty;
+        isInitialLoading = false;
+      });
+    } catch (e) {
+      if(mounted) {
+        setState(() {
+          isError = true;
+          isInitialLoading = false;
+        });
       }
     }
   }
 
-  // Load more reservations
   Future<void> _loadMoreReservations() async {
-    setState(() {
-      isLoadingMore = true;
-    });
+    if (isLoading || !hasMoreData) return;
 
-    currentPage++;
-    var newReservations = await getReservations(pageNumber: currentPage);
+    try {
+      setState(() => isLoading = true);
+      final newReservations = await _fetchReservations(page: currentPage + 1);
 
-    setState(() {
-      reservations.addAll(newReservations);
-      hasMoreData = newReservations.isNotEmpty; // Check if more data is available
-      isLoadingMore = false;
-    });
+      setState(() {
+        if (newReservations.isNotEmpty) {
+          reservations.addAll(newReservations);
+          currentPage++;
+        }
+        hasMoreData = newReservations.isNotEmpty;
+        isLoading = false;
+      });
+    } catch (e) {
+      setState(() => isLoading = false);
+    }
   }
 
-  // Refresh reservations
+  Future<List<Reservation>> _fetchReservations({required int page}) async {
+    return await ConnectionController.getOwnReservations(
+      token: sharedPrefsController.getToken(),
+      pageNumber: page,
+    );
+  }
+
+  void _scrollListener() {
+    if (scrollController.position.pixels >=
+        scrollController.position.maxScrollExtent - 200 &&
+        !isLoading &&
+        hasMoreData) {
+      _loadMoreReservations();
+    }
+  }
+
   Future<void> _refreshReservations() async {
     setState(() {
-      reservations.clear(); // Clear the current list
-      currentPage = 1; // Reset pagination
-      hasMoreData = true; // Reset hasMoreData flag
-      reservationsFuture = getReservations(); // Re-fetch data
+      currentPage = 1;
+      hasMoreData = true;
     });
+    await _loadInitialReservations();
   }
 
   @override
@@ -110,24 +128,7 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
               ),
             ),
             Expanded(
-              child: FutureBuilder(
-                future: reservationsFuture,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return HCCPI(color: HomeCareTheme.primaryColor);
-                  } else if (sharedPrefsController.sessionTerminated()) {
-                    return ReLoginWidget(context);
-                  } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
-                  } else if (snapshot.hasData && snapshot.data!.isEmpty) {
-                    String errorMessage = sharedPrefsController.getMSG();
-                    return Center(child: MessageWidget(text: errorMessage, medium: true));
-                  } else {
-                    reservations = snapshot.data ?? [];
-                    return buildOwnReservations();
-                  }
-                },
-              ),
+              child: _buildContent(),
             ),
           ],
         ),
@@ -135,124 +136,105 @@ class _ReservationsScreenState extends State<ReservationsScreen> {
     );
   }
 
-  Widget buildOwnReservations() {
+  Widget _buildContent() {
+    if (isInitialLoading) {
+      return Center(child: HCCPI(color: HomeCareTheme.primaryColor));
+    }
+
+    if (sharedPrefsController.sessionTerminated()) {
+      return ReLoginWidget(context);
+    }
+
+    if (isError) {
+      return MessageWidget(text: 'حدث خطأ أثناء جلب البيانات', errorOrWarning: true);
+    }
+
+    if (reservations.isEmpty) {
+      String errorMessage = sharedPrefsController.getMSG();
+      return Center(child: MessageWidget(text: errorMessage, medium: true));
+    }
+
     return RefreshIndicator(
       color: HomeCareTheme.primaryColorBold,
       backgroundColor: Colors.white,
-      onRefresh: _refreshReservations, // Call the refresh method
+      onRefresh: _refreshReservations,
       child: ListView.builder(
-        controller: scrollController, // Attach the ScrollController
+        controller: scrollController,
         padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 10.0),
-        itemCount: reservations.length + (hasMoreData ? 1 : 0), // Add 1 for loading indicator
-        physics: const AlwaysScrollableScrollPhysics(),
+        itemCount: reservations.length + (hasMoreData ? 1 : 0),
+        physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
-          if (index == reservations.length) {
-            if (reservations.length == 1) {
-              return Center();
-            } else {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: HCCPI(color: HomeCareTheme.primaryColor),
-                ),
-              );
-            }
+          if (index >= reservations.length) {
+            return Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Center(
+                child: isLoading
+                    ? HCCPI(color: HomeCareTheme.primaryColor)
+                    : const SizedBox.shrink(),
+              ),
+            );
           }
 
-          var caseItem = reservations[index];
+          final reservation = reservations[index];
           return ReservationCard(
             context,
-            id: caseItem.id,
-            medicalServiceName: caseItem.medicalServiceName,
-            patientName: caseItem.nurseName,
-            visitDate: caseItem.visitDate,
-            address: '${caseItem.geocodedAddress!.governorateDto.name} ${caseItem.geocodedAddress!.regionDto.name} ${caseItem.geocodedAddress!.details}',
-            onCancel: () {
-              bool isLoading = false;
-
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext dialogContext) {
-                  return StatefulBuilder(
-                    builder: (context, setStateDialog) {
-                      return Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: AlertDialog(
-                          title: isLoading ? Center(child: HCCPI(color: HomeCareTheme.primaryColor)) : Text('إلغاء الطلب'),
-                          content: isLoading ? SizedBox.shrink() : Text('هل أنت متأكد ؟'),
-                          actions: <Widget>[
-                            if (!isLoading)
-                              SizedBox(
-                                width: 120.0,
-                                child: IconButton(
-                                  onPressed: () async {
-                                    setStateDialog(() => isLoading = true);
-
-                                    var result = await ConnectionController.cancelCaseByPatient(
-                                      token: sharedPrefsController.getToken(),
-                                      caseId: caseItem.id,
-                                    );
-                                    Navigator.of(dialogContext).pop();
-                                    if (sharedPrefsController.sessionTerminated()) {
-                                      HomeCareStyle.showReLoginDialog(context);
-                                    } else if(result) {
-                                      HomeCareStyle.showSnackBar(
-                                        context,
-                                        success: true,
-                                        content: 'تم إلغاء الطلب بنجاح',
-                                        icon: Icons.check_circle,
-                                      );
-                                      /// ✅ Refresh the reservations list
-                                      setState(() {
-                                        reservationsFuture = getReservations();
-                                      });
-                                    } else {
-                                      HomeCareStyle.showSnackBar(
-                                        context,
-                                        content: sharedPrefsController.getMSG(),
-                                        icon: Icons.info_outline,
-                                      );
-                                    }
-                                  },
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: Colors.red.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('إلغاء الطلب', style: TextStyle(color: Colors.red, fontSize: 14.0)),
-                                ),
-                              ),
-                            if (!isLoading)
-                              SizedBox(
-                                width: 100.0,
-                                child: IconButton(
-                                  onPressed: () => Navigator.of(dialogContext).pop(),
-                                  style: IconButton.styleFrom(
-                                    elevation: 0.0,
-                                    backgroundColor: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
-                                  ),
-                                  icon: Text('تراجع', style: TextStyle(color: HomeCareTheme.primaryColorBold, fontSize: 14.0)),
-                                ),
-                              ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-              );
-            },
-            onPressed: () {
-              debugPrint(caseItem.id.toString());
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ReservationDetailsScreen(sessionId: caseItem.id),
-                ),
-              );
-            },
+            id: reservation.id,
+            medicalServiceName: reservation.medicalServiceName,
+            patientName: reservation.patientName,
+            nurseName: reservation.nurseName,
+            visitDate: reservation.visitDate,
+            address: '${reservation.geocodedAddress?.governorateDto.name ?? ''} '
+                '${reservation.geocodedAddress?.regionDto.name ?? ''} '
+                '${reservation.geocodedAddress?.details ?? ''}',
+            onCancel: () => _showCancelDialog(reservation),
+            onPressed: () => _navigateToDetails(reservation),
           );
         },
+      ),
+    );
+  }
+
+  void _showCancelDialog(Reservation reservation) {
+    HomeCareStyle.showHomeCareDialog(
+      context,
+      title: 'إلغاء الطلب',
+      content: 'هل أنت متأكد ؟',
+      onOk: () async {
+        final result = await ConnectionController.cancelCaseByPatient(
+          token: sharedPrefsController.getToken(),
+          caseId: reservation.id,
+        );
+
+        Navigator.of(context).pop();
+
+        if (sharedPrefsController.sessionTerminated()) {
+          HomeCareStyle.showReLoginDialog(context);
+        } else if (result) {
+          HomeCareStyle.showSnackBar(
+            context,
+            success: true,
+            content: 'تم إلغاء الطلب بنجاح',
+            icon: Icons.check_circle,
+          );
+          await _refreshReservations();
+        } else {
+          HomeCareStyle.showSnackBar(
+            context,
+            content: sharedPrefsController.getMSG(),
+            icon: Icons.info_outline,
+          );
+        }
+      },
+      onOkColor: HomeCareTheme.redColor,
+      onCancelColor: HomeCareTheme.primaryColor,
+    );
+  }
+
+  void _navigateToDetails(Reservation reservation) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReservationDetailsScreen(sessionId: reservation.id),
       ),
     );
   }

@@ -25,7 +25,7 @@ Widget ReLoginWidget(BuildContext context) {
               '/', (Route<dynamic> route) => false,
             );
           },
-          title: Text('إعادة الدخول', style: TextStyle(fontSize: 16.0, color: HomeCareTheme.secondaryColor, fontWeight: FontWeight.bold)),
+          title: Text('إعادة الدخول', style: TextStyle(fontSize: 16.0, color: Colors.white, fontWeight: FontWeight.bold)),
           width: 120.0,
           backgroundColor: HomeCareTheme.primaryColor,
 

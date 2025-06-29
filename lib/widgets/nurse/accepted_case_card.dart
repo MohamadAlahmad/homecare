@@ -27,7 +27,7 @@ Widget AcceptedCaseCard(
   String formattedTime = DateFormat('hh:mm a', 'en').format(parsedDate); // Change 'ar' to your desired locale if needed
 
   return Container(
-    height: 165.0,
+    //height: 165.0,
     width: MediaQuery.of(context).size.width,
     margin: const EdgeInsets.only(bottom: 10.0),
     padding: const EdgeInsets.all(10.0),
@@ -40,6 +40,8 @@ Widget AcceptedCaseCard(
         Column(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          spacing: 5.0,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
@@ -75,8 +77,6 @@ Widget AcceptedCaseCard(
               ],
             ),
             Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Image.asset('assets/icons/location_nurse.png', scale: 3.0, color: HomeCareTheme.primaryColorBoldExtra),
                 const SizedBox(width: 3.0),
@@ -85,11 +85,17 @@ Widget AcceptedCaseCard(
                     padding: const EdgeInsets.only(top: 5.0),
                     child: Text(address!.isEmpty ? '(لا يوجد عنوان)' : address,
                       style: TextStyle(color: Colors.black, fontSize: 14.0),
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
                 Image.asset('assets/icons/calendar_nurse.png', scale: 3.0, color: HomeCareTheme.primaryColorBoldExtra),
                 const SizedBox(width: 3.0),
                 Padding(

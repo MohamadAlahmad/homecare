@@ -1,5 +1,3 @@
-//ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
@@ -7,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';
+import 'package:homecare/core/utils/helper_methods.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/widgets/login_item.dart';
@@ -63,8 +62,14 @@ class _ProfileNurseScreenState extends State<ProfileNurseScreen> {
                           physics: NeverScrollableScrollPhysics(),
                           itemCount: Globals.listOfNurseProfileItems.length + 1,
                           itemBuilder: (context, i) {
-                            if(i == Globals.listOfNurseProfileItems.length) {
-                              return logoutItem(logoutMethod: logoutMethod);
+                            if (i == Globals.listOfNurseProfileItems.length) {
+                              return logoutItem(
+                                logoutMethod: () {
+                                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                                    HomeCareHelperClass.logoutMethod(context);
+                                  });
+                                },
+                              );
                             } else {
                               return ProfileItem(
                                 context,
@@ -89,30 +94,4 @@ class _ProfileNurseScreenState extends State<ProfileNurseScreen> {
       ),
     );
   }
-
-  logoutMethod() {
-    HomeCareStyle.showCustomDialog2(
-      context,
-      title: 'تسجيل الخروج',
-      buttonTitle: 'نعم',
-      content: 'هل تريد تسجيل الخروج فعلاً من حسابك في التطبيق ؟',
-      onYesPressed: () async {
-        var result = await ConnectionController.logout(token: sharedPrefsController.getToken());
-        if(result) {
-          sharedPrefsController.clearData();
-          GlobalPageController.registerController = PageController(initialPage: 0);
-          Navigator.of(context).pushNamedAndRemoveUntil('/', (Route<dynamic> route) => false);
-        } else {
-          Navigator.pop(context);
-          HomeCareStyle.showSnackBar(
-            context,
-            content: 'فشل تسجيل الخروج',
-            icon: CupertinoIcons.exclamationmark_circle_fill,
-          );
-        }
-      },
-      buttonColor: Colors.red,
-    );
-  }
-
 }

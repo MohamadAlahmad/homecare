@@ -1,6 +1,9 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously, non_constant_identifier_names
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:homecare/core/utils/globals.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
@@ -37,7 +40,7 @@ class _SecondCodeScreenState extends State<SecondCodeScreen> {
         body: Stack(
           children: [
             Container(
-              margin: EdgeInsets.only(left: 10.0, right: 10.0, top: MediaQuery.of(context).size.height * 0.05, bottom: MediaQuery.of(context).size.height * 0.03),
+              margin: EdgeInsets.only(left: 10.0, right: 10.0, top: Platform.isIOS ? HomeCareSize.height(context) * 0.05 : HomeCareSize.height(context) * 0.01, bottom: MediaQuery.of(context).size.height * 0.03),
               child: Center(
                 child: Form(
                   key: formKey,

@@ -1,5 +1,3 @@
-//ignore_for_file: constant_identifier_names, non_constant_identifier_names, use_build_context_synchronously
-
 import 'package:flutter/material.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';
@@ -61,7 +59,7 @@ class _ReservationDetailsScreenState extends State<ReservationDetailsScreen> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return HCCPI(color: HomeCareTheme.primaryColor);
         } else if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return MessageWidget(text: 'حدث خطأ أثناء جلب البيانات', errorOrWarning: true);
         } else if(sharedPrefsController.sessionTerminated()) {
           return ReLoginWidget(context);
         } else if (!snapshot.hasData) {

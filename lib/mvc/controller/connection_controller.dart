@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart' as GetX;
+import 'package:homecare/mvc/model/api/check_version_model.dart';
 import 'package:homecare/mvc/model/api/lab_model.dart';
 import 'package:homecare/mvc/model/api/lab_test_model.dart';
 import 'package:http/http.dart' as http;
@@ -138,6 +139,7 @@ class ConnectionController {
       },
       onUnauthorizedAdditional: null,
       onGone: () => 'expired',
+      onBadRequest: () => 'failed',
       responseBody: response['body'],
     );
   }
@@ -247,7 +249,7 @@ class ConnectionController {
       'dialCodeForAlternativePhoneNumber': dialCodeForAlternativePhoneNumber,
       'alternativePhoneNumber': alternativePhoneNumber,
       'gender': gender,
-      'personalImageId': personalImageId,
+      if(personalImageId != -1) 'personalImageId': personalImageId,
       'geographicCoordinates': {
         'latitude': latitude,
         'longitude': longitude,
@@ -322,11 +324,15 @@ class ConnectionController {
           String imageUrl = '${HomeCareApi.baseUrl}/${result['data']['personalImage']['url']}';
           prefsController.saveProfileImageUrl(imageUrl: imageUrl);
           prefsController.saveIdOfProfileImage(id: result['data']['personalImage']['id']);
+        } else {
+          prefsController.saveProfileImageUrl(imageUrl: '');
+          prefsController.saveIdOfProfileImage(id: -1);
         }
-
         return;
       },
-      onUnauthorizedAdditional: null,
+      onUnauthorizedAdditional: () {
+        return;
+      },
       onGone: null,
       responseBody: response['body'],
     );
@@ -431,6 +437,7 @@ class ConnectionController {
         debugPrint('428 Status Code !!');
         return false;
       },
+      onBadRequest: () => false,
       onUnauthorizedAdditional: () => false,
       onGone: null,
       responseBody: response['body'],
@@ -588,7 +595,6 @@ class ConnectionController {
     required String details,
   }) async {
     attachmentIds = attachmentIds.where((id) => id != -1).toList();
-    print('Update Method');
     for(int i = 0; i< attachmentIds.length; i++) {
       print('[${attachmentIds[i]}] -');
     }
@@ -1763,7 +1769,6 @@ class ConnectionController {
   static Future<bool> deleteFile({required String token, required int id}) async {
     Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.deleteFile}/$id');
 
-    print('Delete File Full Url : $url');
     var response = await HttpHelper.httpRequest(
       url: url,
       method: 'DELETE',
@@ -1773,11 +1778,9 @@ class ConnectionController {
       },
     );
 
-    print('Delete File Full Url 2 : $url');
     return await HttpHelper.handleResponse(
       statusCode: response['statusCode'],
       onSuccess: () {
-        print('Delete File Full Url 3 : $url');
         print('√√√√√√√√√√√√√√√√√√√√√√√√√ ');
         return true;
       },
@@ -1838,6 +1841,30 @@ class ConnectionController {
         return labs;
       },
       onUnauthorizedAdditional: () => [],
+      onGone: null,
+      responseBody: response['body'],
+    );
+  }
+
+  static Future<CheckVersionModel> checkVersion({required String token}) async {
+    Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.getVersion);
+
+    var response = await HttpHelper.httpRequest(
+      url: url,
+      method: 'GET',
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+    );
+
+    return await HttpHelper.handleResponse(
+      statusCode: response['statusCode'],
+      onSuccess: () {
+        prefsController.saveMSG(message: response['body']['message']);
+        return CheckVersionModel.fromJson(response['body']['data']);
+      },
+      onUnauthorizedAdditional: null,
       onGone: null,
       responseBody: response['body'],
     );

@@ -1,8 +1,5 @@
-//ignore_for_file: constant_identifier_names, non_constant_identifier_names, use_build_context_synchronously
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
 import 'package:homecare/core/utils/globals.dart';

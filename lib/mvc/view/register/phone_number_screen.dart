@@ -1,6 +1,7 @@
 // ignore_for_file: prefer_const_constructors, use_build_context_synchronously, non_constant_identifier_names
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -41,7 +42,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
           physics: const BouncingScrollPhysics(),
           child: Center(
             child: Container(
-              margin: EdgeInsets.only(left: 10.0, right: 10.0, top: MediaQuery.of(context).size.height * 0.05, bottom: MediaQuery.of(context).size.height * 0.03),
+              margin: EdgeInsets.only(left: 10.0, right: 10.0, top: Platform.isIOS ? HomeCareSize.height(context) * 0.05 : HomeCareSize.height(context) * 0.01, bottom: MediaQuery.of(context).size.height * 0.03),
               child: Form(
                 key: formKey,
                 child: Stack(

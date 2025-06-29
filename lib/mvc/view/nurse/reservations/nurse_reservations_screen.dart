@@ -1,5 +1,3 @@
-//ignore_for_file: use_build_context_synchronously
-
 import 'dart:io';
 import 'package:animated_toggle_switch/animated_toggle_switch.dart';
 import 'package:flutter/material.dart';
@@ -190,7 +188,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: EdgeInsets.only(top: Platform.isIOS ? 75.0 : 25.0),
+        padding: EdgeInsets.only(top: Platform.isIOS ? 75.0 : 10.0),
         child: Directionality(
           textDirection: TextDirection.rtl,
           child: SingleChildScrollView(
@@ -200,7 +198,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
                 Padding(
                   padding: EdgeInsets.fromLTRB(
                     10.0,
-                    Platform.isIOS ? 10.0 : 20.0,
+                    Platform.isIOS ? 10.0 : 0.0,
                     10.0,
                     Platform.isIOS ? 5.0 : 10.0,
                   ),
@@ -290,7 +288,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
           : sharedPrefsController.sessionTerminated()
           ? ReLoginWidget(context)
           : sharedPrefsController.getMustFillInfo()
-          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', mustFillInfo: true)
+          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', errorOrWarning: true)
           : pendingCases.isEmpty && !isLoadingMorePending
           ? ListView(
         padding: EdgeInsets.fromLTRB(10.0, HomeCareSize.height(context) * 0.3, 10.0, 10.0),
@@ -314,7 +312,6 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
               );
             }
           }
-
           var caseItem = pendingCases[index];
           return PendingCaseCard(
             context,
@@ -324,96 +321,45 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
             address: '${caseItem.geocodedAddress!.governorateDto.name} ${caseItem.geocodedAddress!.regionDto.name} ${caseItem.geocodedAddress!.details}',
             isSpecial: caseItem.specialized,
             onAccept: () {
-              bool isLoading = false;
-
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (BuildContext dialogContext) {
-                  return StatefulBuilder(
-                    builder: (context, setStateDialog) {
-                      return Directionality(
-                        textDirection: TextDirection.rtl,
-                        child: AlertDialog(
-                          title: isLoading
-                              ? Center(child: HCCPI(color: HomeCareTheme.primaryColor))
-                              : Text('قبول الطلب'),
-                          content: Text('هل أنت متأكد ؟'),
-                          actions: <Widget>[
-                            SizedBox(
-                              width: 120.0,
-                              child: IconButton(
-                                onPressed: isLoading ? null : () async {
-                                  setStateDialog(() => isLoading = true);
-
-                                  var result = await ConnectionController.acceptCase(
-                                    token: sharedPrefsController.getToken(),
-                                    caseId: caseItem.id,
-                                  );
-                                  Navigator.of(dialogContext).pop();
-                                  if (sharedPrefsController.sessionTerminated()) {
-                                    HomeCareStyle.showReLoginDialog(context);
-                                  } else if (result) {
-                                    HomeCareStyle.showSnackBar(
-                                      context,
-                                      success: true,
-                                      content: 'تم قبول الطلب بنجاح',
-                                      icon: Icons.check_circle,
-                                    );
-
-                                    /// ✅ Refresh the UI in the main screen
-                                    if (mounted) {
-                                      setState(() {
-                                        pendingCases.clear();
-                                        pendingPage = 1;
-                                        isInitialLoadingPending = true;
-                                        getPendingCases(); // Fetch new data
-                                      });
-                                    }
-                                  } else {
-                                    HomeCareStyle.showSnackBar(
-                                      context,
-                                      content: sharedPrefsController.getMSG(),
-                                      icon: Icons.info_outline,
-                                    );
-                                  }
-                                },
-                                style: IconButton.styleFrom(
-                                  elevation: 0.0,
-                                  backgroundColor: Colors.green.withOpacity(0.1),
-                                ),
-                                icon: Text(
-                                  'قبول الطلب',
-                                  style: TextStyle(color: Colors.green, fontSize: 14.0),
-                                ),
-                              ),
-                            ),
-                            SizedBox(
-                              width: 100.0,
-                              child: IconButton(
-                                onPressed: isLoading ? null : () => Navigator.of(dialogContext).pop(),
-                                style: IconButton.styleFrom(
-                                  elevation: 0.0,
-                                  backgroundColor: Colors.grey.withOpacity(0.3),
-                                ),
-                                icon: Text(
-                                  'تراجع',
-                                  style: TextStyle(
-                                    color: Colors.grey[700],
-                                    fontSize: 14.0,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+              HomeCareStyle.showHomeCareDialog(
+                context,
+                title: 'قبول الطلب',
+                content: 'هل أنت متأكد ؟',
+                onOkTitle: 'قبول الطلب',
+                onOk: () async {
+                  var result = await ConnectionController.acceptCase(
+                    token: sharedPrefsController.getToken(),
+                    caseId: caseItem.id,
                   );
+                  Navigator.of(context).pop();
+                  if (sharedPrefsController.sessionTerminated()) {
+                    HomeCareStyle.showReLoginDialog(context);
+                  } else if (result) {
+                    HomeCareStyle.showSnackBar(
+                      context,
+                      success: true,
+                      content: 'تم قبول الطلب بنجاح',
+                      icon: Icons.check_circle,
+                    );
+                    /// ✅ Refresh the UI in the main screen
+                    if (mounted) {
+                      setState(() {
+                        pendingCases.clear();
+                        pendingPage = 1;
+                        isInitialLoadingPending = true;
+                        getPendingCases(); // Fetch new data
+                      });
+                    }
+                  } else {
+                    HomeCareStyle.showSnackBar(
+                      context,
+                      content: sharedPrefsController.getMSG(),
+                      icon: Icons.info_outline,
+                    );
+                  }
                 },
               );
             },
-
           );
         },
       ),
@@ -437,7 +383,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
           : sharedPrefsController.sessionTerminated()
           ? ReLoginWidget(context)
           : sharedPrefsController.getMustFillInfo()
-          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', mustFillInfo: true)
+          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', errorOrWarning: true)
           : finishedCases.isEmpty
           ? ListView(
         padding: EdgeInsets.fromLTRB(10.0, HomeCareSize.height(context) * 0.3, 10.0, 10.0),
@@ -462,9 +408,8 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
               );
             }
           }
-
           var caseItem = finishedCases[index];
-          return FinishedScreenCard(
+          return GeneralCaseCard(
             context,
             medicalServiceName: caseItem.medicalServiceName,
             patientName: caseItem.patientName,
@@ -474,6 +419,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
             onPressed: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => HealthRecordDetailsScreen(sessionId: caseItem.id)));
             },
+            isForNurseActivityRecord: false,
           );
         },
       ),
@@ -497,7 +443,7 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
           : sharedPrefsController.sessionTerminated()
           ? ReLoginWidget(context)
           : sharedPrefsController.getMustFillInfo()
-          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', mustFillInfo: true)
+          ? MessageWidget(text: 'يجب إكمال البيانات حتى يتم استقبال الحالات', errorOrWarning: true)
           : cancelledCases.isEmpty
           ? ListView(
         padding: EdgeInsets.fromLTRB(10.0, HomeCareSize.height(context) * 0.3, 10.0, 10.0),
@@ -522,9 +468,8 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
               );
             }
           }
-
           var caseItem = cancelledCases[index];
-          return FinishedScreenCard(
+          return GeneralCaseCard(
             context,
             medicalServiceName: caseItem.medicalServiceName,
             patientName: caseItem.patientName,
@@ -532,6 +477,8 @@ class _NurseReservationsScreenState extends State<NurseReservationsScreen> {
             address: '${caseItem.geocodedAddress!.governorateDto.name} ${caseItem.geocodedAddress!.regionDto.name} ${caseItem.geocodedAddress!.details}',
             isSpecial: caseItem.specialized,
             onPressed: () {},
+            isCancelled: true,
+            isForNurseActivityRecord: false,
           );
         },
       ),

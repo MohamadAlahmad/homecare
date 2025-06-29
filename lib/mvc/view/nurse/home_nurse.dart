@@ -1,9 +1,12 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:io';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:homecare/core/theme/themes.dart';
+import 'package:homecare/core/utils/helper_methods.dart';
 import 'package:homecare/mvc/controller/connection_controller.dart';
 import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
 import 'package:homecare/mvc/view/nurse/profile_nurse_screen.dart';
@@ -22,7 +25,6 @@ class HomeNurse extends StatefulWidget {
 }
 
 class _HomeNurseState extends State<HomeNurse> {
-  //late PageController pageNurseController;
 
   @override
   void initState() {
@@ -30,15 +32,20 @@ class _HomeNurseState extends State<HomeNurse> {
     setState(() {
       selectedNIndex = 2;
     });
-    //pageNurseController = PageController(initialPage: selectedIndex);
     getNurseDetails();
+    checkVersion();
+  }
+
+  checkVersion() {
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      HomeCareHelperClass.checkVersion(context);
+    });
   }
 
   void onItemTapped(int index) {
     setState(() {
       selectedNIndex = index;
     });
-    //pageController.jumpToPage(index);
   }
 
   void getNurseDetails() {

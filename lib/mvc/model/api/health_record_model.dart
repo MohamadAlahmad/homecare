@@ -15,6 +15,7 @@ class HealthRecordModel {
   PreviousCase? visitCase;
   LabModel? lab;
   List<LabTestModel> labTests;
+  bool attachmentsAdded;
 
   HealthRecordModel({
     required this.id,
@@ -28,6 +29,7 @@ class HealthRecordModel {
     required this.visitCase,
     this.lab,
     this.labTests = const [],
+    required this.attachmentsAdded,
   });
 
   factory HealthRecordModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +51,7 @@ class HealthRecordModel {
       labTests: (json['labTests'] as List?)
           ?.map((labTestJson) => LabTestModel.fromJson(labTestJson))
           .toList() ?? [],
+      attachmentsAdded: json['attachmentsAdded'] ?? false,
     );
   }
 
@@ -64,6 +67,7 @@ class HealthRecordModel {
       'geocodedAddress': geocodedAddress?.toJson(),
       'lab': lab?.toJson(),
       'labTests': labTests.map((labTest) => labTest.toJson()).toList(),
+      'attachmentsAdded': attachmentsAdded,
     };
   }
 }

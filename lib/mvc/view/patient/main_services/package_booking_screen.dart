@@ -1,5 +1,3 @@
-//ignore_for_file: constant_identifier_names, non_constant_identifier_names, use_build_context_synchronously
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -48,6 +46,8 @@ class _PackageBookingScreenState extends State<PackageBookingScreen> {
 
   String? selectedTime;
   int? visitHours;
+
+  bool nursesExpanded = false;
 
   bool isValueEnabled(int value) {
     if (selectedTime == null) return true;
@@ -327,39 +327,67 @@ class _PackageBookingScreenState extends State<PackageBookingScreen> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        Text('الممرضين المتاحين', style: TextStyle(fontSize: 18.0, color: Colors.black)),
-        const SizedBox(height: 10.0),
-        Directionality(
-          textDirection: TextDirection.rtl,
-          child: SizedBox(
-            height: 175.0,
-            child: listOfNurses.isEmpty
-                ? HCCPI()
-                : ListView.builder(
-              itemCount: listOfNurses.length,
-              scrollDirection: Axis.horizontal,
-              physics: const BouncingScrollPhysics(),
-              itemBuilder: (context, index) {
-                Nurse nurse = listOfNurses[index];
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      for (var n in listOfNurses) {
-                        n.isSelected = false;
-                      }
-                      nurse.isSelected = true;
-                      selectedNurseId = nurse.id;
-                      debugPrint(selectedNurseId.toString());
-                    });
-                  },
-                  child: CustomItemCard(
-                    id: nurse.id,
-                    title: '${nurse.firstName} ${nurse.lastName}',
-                    value: nurse.rate,
-                    isSelected: nurse.isSelected,
-                  ),
-                );
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              onPressed: () {
+                setState(() {
+                  nursesExpanded = !nursesExpanded;
+                });
               },
+              icon: nursesExpanded
+                  ? RotatedBox(quarterTurns: 2, child: Image.asset('assets/icons/arrow_down.png', scale: 2.0))
+                  : Image.asset('assets/icons/arrow_down.png', scale: 2.0),
+            ),
+            Text('الممرضين المتاحين (اختياري)', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+          ],
+        ),
+        const SizedBox(height: 10.0),
+        ExpandedSection(
+          expand: nursesExpanded,
+          height: 175.0,
+          forwardDuration: const Duration(milliseconds: 700),
+          reverseDuration: const Duration(milliseconds: 700),
+          child: Directionality(
+            textDirection: TextDirection.rtl,
+            child: SizedBox(
+              height: 175.0,
+              child: listOfNurses.isEmpty
+                  ? HCCPI()
+                  : ListView.builder(
+                itemCount: listOfNurses.length,
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  Nurse nurse = listOfNurses[index];
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        if (nurse.isSelected) {
+                          nurse.isSelected = false;
+                          selectedNurseId = -1;
+                        } else {
+                          for (var n in listOfNurses) {
+                            n.isSelected = false;
+                          }
+                          nurse.isSelected = true;
+                          selectedNurseId = nurse.id;
+                        }
+                        debugPrint(selectedNurseId.toString());
+                      });
+                    },
+                    child: CustomItemCard(
+                      id: nurse.id,
+                      title: '${nurse.firstName} ${nurse.lastName}',
+                      value: nurse.rate,
+                      isSelected: nurse.isSelected,
+                      disableStars: true,
+                      imagePath: '',
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ),
