@@ -82,24 +82,27 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
     PermissionStatus status;
 
     if (sdkInt >= 33) {
-      // For Android 13 and above, use READ_MEDIA_IMAGES or appropriate permission
+      // Android 13+ uses more granular media permissions
       status = await Permission.photos.request();
     } else {
-      // For Android 12 and below, use READ_EXTERNAL_STORAGE
       status = await Permission.storage.request();
     }
 
     if (status.isGranted) {
-      FilePickerResult? result = await FilePicker.platform.pickFiles();
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      );
+
       if (result != null) {
         setState(() {
           filePaths[fileIndex] = result.files.single.path;
           fileNames[fileIndex] = result.files.single.name;
-          fileLoadingStates[fileIndex] = true; // Set loading state to true
+          fileLoadingStates[fileIndex] = true;
         });
         await uploadAttachment(fileIndex);
         setState(() {
-          fileLoadingStates[fileIndex] = false; // Set loading state to false after upload
+          fileLoadingStates[fileIndex] = false;
         });
       }
     } else if (status.isDenied) {
@@ -114,7 +117,7 @@ class _NurseAccountDetailsPageState extends State<NurseAccountDetailsPage> {
       );
     } else if (status.isPermanentlyDenied) {
       Fluttertoast.showToast(
-        msg: "تم رفض الوصول إلى التخزين بشكل دائم. يرجى تمكين الأذن من إعدادات التطبيق.",
+        msg: "تم رفض الوصول إلى التخزين بشكل دائم. يرجى تمكين الإذن من إعدادات التطبيق.",
         toastLength: Toast.LENGTH_SHORT,
         gravity: ToastGravity.BOTTOM,
         timeInSecForIosWeb: 1,
