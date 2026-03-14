@@ -1755,9 +1755,9 @@ class ConnectionController {
         print('Success Upload Profile Image ✅✅✅');
         return json['id'];
       } else {
-        final responseString = await response.stream.bytesToString();
-        final json = jsonDecode(responseString);
-        final message = json['message'] ?? 'Unknown error';
+        //final responseString = await response.stream.bytesToString();
+        //final json = jsonDecode(responseString);
+        //final message = json['message'] ?? 'Unknown error';
         return -1;
       }
     } catch (e) {

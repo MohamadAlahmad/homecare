@@ -9,9 +9,9 @@ class UploadButton extends StatelessWidget {
   final String? filePath;
   final String? fileName;
   final bool loading;
-  bool? forFillSession;
+  final bool? forFillSession;
 
-  UploadButton({
+  const UploadButton({
     super.key,
     required this.onPressed,
     this.filePath,

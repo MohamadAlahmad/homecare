@@ -2,11 +2,6 @@
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:homecare/core/theme/themes.dart';
-import 'package:homecare/mvc/controller/shared_preferences_controller.dart';
-import 'package:homecare/mvc/view/nurse/home_nurse.dart';
-import 'package:homecare/mvc/view/patient/home_patient.dart';
-import 'package:homecare/widgets/buttons.dart';
 
 Directionality MessageWidget({required String text, bool small = false, bool medium = false, Color? color = Colors.grey, bool errorOrWarning = false}) {
   return Directionality(

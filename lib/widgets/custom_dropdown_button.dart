@@ -36,7 +36,7 @@ class CustomDropdownWidget<T> extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 15.0),
         //margin: const EdgeInsets.symmetric(horizontal: 10.0),
         child: DropdownButtonFormField<T>(
-          value: selectedItem,
+          initialValue: selectedItem,
           hint: Center(
             child: Text(
               hintText,

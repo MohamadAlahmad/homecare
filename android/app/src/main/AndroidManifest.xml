@@ -17,8 +17,9 @@
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         android:requestLegacyExternalStorage="true"
-        android:allowBackup="false">
-        <!-- Add the Google Maps API key here -->
+        android:allowBackup="false"
+        android:networkSecurityConfig="@xml/network_security_config">
+        <!-- The Google Maps API key here -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB6Dm6yaXbf1HxCtEdqWQaFQETiVupXgHw" />

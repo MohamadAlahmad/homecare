@@ -55,7 +55,7 @@ class HomeCareHelperClass {
       elevation: 8.0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
-        side: BorderSide(color: HomeCareTheme.secondaryColorBold.withOpacity(0.2)),
+        side: BorderSide(color: HomeCareTheme.secondaryColorBold.withValues(alpha: 0.2)),
       ),
       items: [
         PopupMenuItem<String>(

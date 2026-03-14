@@ -24,7 +24,7 @@ import 'package:homecare/widgets/nurse/fill_session_modal.dart';
 import 'package:homecare/widgets/nurse/upload_button.dart';
 import 'package:homecare/widgets/re_login_widget.dart';
 import 'package:homecare/widgets/vital_sign_card.dart';
-import 'package:no_screenshot/no_screenshot.dart';
+import 'package:screen_protector/screen_protector.dart';
 
 class VisitDetailsNurseScreen extends StatefulWidget {
   final String serviceName;
@@ -101,16 +101,22 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
     super.dispose();
   }
 
-  final _noScreenshot = NoScreenshot.instance;
-
   void disableScreenshot() async {
-    bool result = await _noScreenshot.screenshotOff();
-    debugPrint('Screenshot Off: $result');
+    try {
+      await ScreenProtector.protectDataLeakageOn();
+      debugPrint('Screenshot disabled');
+    } catch (e) {
+      debugPrint('Error disabling screenshot: $e');
+    }
   }
 
   void enableScreenshot() async {
-    bool result = await _noScreenshot.screenshotOn();
-    debugPrint('Enable Screenshot: $result');
+    try {
+      await ScreenProtector.protectDataLeakageOff();
+      debugPrint('Screenshot enabled');
+    } catch (e) {
+      debugPrint('Error enabling screenshot: $e');
+    }
   }
 
   @override

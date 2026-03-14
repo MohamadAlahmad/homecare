@@ -28,10 +28,10 @@ dependencies:
   intl:
   firebase_core:
   firebase_messaging:
-  fluttertoast:
+  fluttertoast: ^9.0.0
   flutter_local_notifications:
-  no_screenshot:
-  file_picker:
+  screen_protector:
+  file_picker: ^10.3.3
   dio:
   path_provider:
   path:

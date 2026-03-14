@@ -163,7 +163,7 @@ class _PhoneNumberScreenState extends State<PhoneNumberScreen> {
         );
 
         setState(() {
-          loading = false; // Stop loading regardless of the result
+          loading = false;
         });
 
         if (result == 'success') {

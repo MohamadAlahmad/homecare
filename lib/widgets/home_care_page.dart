@@ -184,8 +184,7 @@ class _HomeCarePageState extends State<HomeCarePage> {
                         padding: const EdgeInsets.only(top: 5.0),
                         child: CustomButton(
                           onPressed: () async {
-                            String result = await Navigator.of(context)
-                                .push(MaterialPageRoute(
+                            await Navigator.of(context).push(MaterialPageRoute(
                                 builder: (context) =>
                                     AddPatientBySupporterScreen())).then((result) {
                               if(result == 'complete-info') {

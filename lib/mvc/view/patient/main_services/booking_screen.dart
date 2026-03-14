@@ -296,7 +296,7 @@ class _BookingScreenState extends State<BookingScreen> {
                                 textDirection: TextDirection.rtl,
                                 child: Switch(
                                   value: isSwitched,
-                                  activeColor: Colors.white,
+                                  activeThumbColor: Colors.white,
                                   activeTrackColor: HomeCareTheme.primaryColor,
                                   inactiveThumbColor: HomeCareTheme.secondaryColor,
                                   inactiveTrackColor: Colors.white,

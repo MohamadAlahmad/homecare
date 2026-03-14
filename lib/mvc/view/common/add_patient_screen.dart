@@ -18,7 +18,6 @@ import 'package:homecare/mvc/model/api/region.dart';
 import 'package:homecare/mvc/view/patient/profile_pages/my_profile_screen.dart';
 import 'package:homecare/widgets/buttons.dart';
 import 'package:homecare/widgets/code_textfield.dart';
-import 'package:homecare/widgets/custom_circular_progress_indicator.dart';
 import 'package:homecare/widgets/custom_dropdown_button.dart';
 import 'package:homecare/widgets/custom_text_field.dart';
 import 'package:homecare/widgets/header_widget.dart';
