@@ -765,6 +765,8 @@ class ConnectionController {
     required int serviceId,
     required int nurseId,
     required List<String> visitsDates,
+    String? caseDescription,
+    int? attachmentsId,
     required int? visitDurationInHours,
     required String token,
     required int regionId,
@@ -777,8 +779,12 @@ class ConnectionController {
       'serviceId': serviceId,
       if (nurseId != -1) 'nurseId': nurseId,
       'visitsDates': visitsDates,
+      if(caseDescription!.isNotEmpty) 'caseDescription': caseDescription,
+      if(attachmentsId != -1) "attachmentsIds": [
+        attachmentsId
+      ],
       if (visitDurationInHours != 0) 'visitDurationInHours': visitDurationInHours,
-      if (regionId !=0 && details.isNotEmpty)
+      if (regionId != 0 && details.isNotEmpty)
         'geocodedAddress': {
           'regionId': regionId.toString(),
           'details': details,
@@ -1695,6 +1701,12 @@ class ConnectionController {
     );
   }
 
+  /*public enum FolderName  // Enum from Backend
+    {
+        ProfilePhotos = 1, // if 1 => For Profile Photo
+        NurseAttachments = 2, // if 2 => For Nurse Attachments
+        PatientAttachments = 3 // if 3 => For Patient Attachments
+   }*/
   static Future<int> uploadFile({
     required int folderName,
     required String token,
@@ -1744,6 +1756,7 @@ class ConnectionController {
     }
     try {
       var response = await request.send();
+      final responseString = await response.stream.bytesToString();
       if (response.statusCode == 200) {
         final responseString = await response.stream.bytesToString();
         final json = jsonDecode(responseString);
@@ -1755,9 +1768,10 @@ class ConnectionController {
         print('Success Upload Profile Image ✅✅✅');
         return json['id'];
       } else {
-        //final responseString = await response.stream.bytesToString();
-        //final json = jsonDecode(responseString);
-        //final message = json['message'] ?? 'Unknown error';
+        print('--------------- Error ---------------');
+        print('Status Code: ${response.statusCode}');
+        print('Response Body: $responseString');
+        print('--------------- Error End ---------------');
         return -1;
       }
     } catch (e) {
@@ -1790,7 +1804,7 @@ class ConnectionController {
     );
   }
 
-  static Future<List<LabTestModel>> getLAbTests({required String token}) async {
+  static Future<List<LabTestModel>> getLabTests({required String token}) async {
     Uri url = Uri.parse('${HomeCareApi.baseUrl}${HomeCareApi.getLabTests}');
 
     var response = await HttpHelper.httpRequest(

@@ -1,5 +1,8 @@
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:get/get.dart';
 import 'package:homecare/core/theme/homecare_style.dart';
 import 'package:homecare/core/theme/themes.dart';
@@ -21,7 +24,10 @@ import 'package:homecare/widgets/expanded_list.dart';
 import 'package:homecare/widgets/header_widget.dart';
 import 'package:homecare/widgets/message_widget.dart';
 import 'package:homecare/widgets/custom_item_card.dart';
+import 'package:homecare/widgets/nurse/upload_button.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:image_picker/image_picker.dart';
 
 class BookingScreen extends StatefulWidget {
   final int serviceId;
@@ -112,7 +118,7 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   getLabTests() async {
-    listOfLabTests = await ConnectionController.getLAbTests(
+    listOfLabTests = await ConnectionController.getLabTests(
       token: sharedPrefsController.getToken(),
     ).then((list) {
       if(sharedPrefsController.sessionTerminated()) {
@@ -137,285 +143,602 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            HeaderWidget(context, title: 'التاريخ والوقت', iconColor: HomeCareTheme.primaryColor),
-            Padding(
-              padding: const EdgeInsets.only(top: 45.0, left: 10.0, right: 10.0),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.zero,
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        const SizedBox(height: 10.0),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20.0),
-                            color: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
-                          ),
-                          child: TableCalendar(
-                            firstDay: firstDay,
-                            lastDay: lastDay,
-                            focusedDay: focusedDay,
-                            selectedDayPredicate: (day) => selectedDays.contains(day),
-                            onDaySelected: (selectedDay, focusedDay) {
-                              setState(() {
-                                if (widget.isLabService!) {
-                                  // Allow only one day selection
-                                  selectedDays = [selectedDay];
-                                } else {
-                                  if (selectedDays.contains(selectedDay)) {
-                                    // Remove the day if already selected
-                                    selectedDays.remove(selectedDay);
+      body: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+        },
+        child: SafeArea(
+          child: Stack(
+            children: [
+              HeaderWidget(context, title: 'التاريخ والوقت', iconColor: HomeCareTheme.primaryColor),
+              Padding(
+                padding: const .only(top: 45.0, left: 10.0, right: 10.0),
+                child: SingleChildScrollView(
+                  padding: .zero,
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      Column(
+                        spacing: 10.0,
+                        crossAxisAlignment: .end,
+                        children: [
+                          const SizedBox(height: 10.0),
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: .circular(20.0),
+                              color: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
+                            ),
+                            child: TableCalendar(
+                              firstDay: firstDay,
+                              lastDay: lastDay,
+                              focusedDay: focusedDay,
+                              selectedDayPredicate: (day) => selectedDays.contains(day),
+                              onDaySelected: (selectedDay, focusedDay) {
+                                setState(() {
+                                  if (widget.isLabService!) {
+                                    // Allow only one day selection
+                                    selectedDays = [selectedDay];
                                   } else {
-                                    // Add the selected day
-                                    selectedDays.add(selectedDay);
+                                    if (selectedDays.contains(selectedDay)) {
+                                      // Remove the day if already selected
+                                      selectedDays.remove(selectedDay);
+                                    } else {
+                                      // Add the selected day
+                                      selectedDays.add(selectedDay);
+                                    }
                                   }
-                                }
-                                focusedDay = focusedDay;  // Update focused day
-                              });
-                            },
-                            onPageChanged: (focusedDay) {
-                              setState(() {
-                                this.focusedDay = focusedDay;  // Update only when navigating months
-                              });
-                            },
-                            calendarFormat: CalendarFormat.month,
-                            headerStyle: HeaderStyle(
-                              formatButtonVisible: false,
-                              leftChevronVisible: true,
-                              rightChevronVisible: true,
-                              leftChevronIcon: Icon(Icons.chevron_left, color: Colors.black),
-                              rightChevronIcon: Icon(Icons.chevron_right, color: Colors.black),
-                              titleTextStyle: TextStyle(color: Colors.black),
-                            ),
-                            calendarStyle: CalendarStyle(
-                              isTodayHighlighted: true,
-                              selectedDecoration: BoxDecoration(
-                                color: HomeCareTheme.primaryColor,
-                                shape: BoxShape.circle,
+                                  focusedDay = focusedDay;  // Update focused day
+                                });
+                              },
+                              onPageChanged: (focusedDay) {
+                                setState(() {
+                                  this.focusedDay = focusedDay;  // Update only when navigating months
+                                });
+                              },
+                              calendarFormat: CalendarFormat.month,
+                              headerStyle: HeaderStyle(
+                                formatButtonVisible: false,
+                                leftChevronVisible: true,
+                                rightChevronVisible: true,
+                                leftChevronIcon: Icon(Icons.chevron_left, color: Colors.black),
+                                rightChevronIcon: Icon(Icons.chevron_right, color: Colors.black),
+                                titleTextStyle: TextStyle(color: Colors.black),
                               ),
-                              todayTextStyle: TextStyle(color: Colors.black),
-                              todayDecoration: BoxDecoration(
-                                color: HomeCareTheme.secondaryColor,
-                                shape: BoxShape.circle,
+                              calendarStyle: CalendarStyle(
+                                isTodayHighlighted: true,
+                                selectedDecoration: BoxDecoration(
+                                  color: HomeCareTheme.primaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                todayTextStyle: TextStyle(color: Colors.black),
+                                todayDecoration: BoxDecoration(
+                                  color: HomeCareTheme.secondaryColor,
+                                  shape: BoxShape.circle,
+                                ),
+                                holidayTextStyle: TextStyle(color: Colors.black),
+                                defaultTextStyle: TextStyle(color: Colors.black),
+                                weekendTextStyle: TextStyle(color: Colors.black),
                               ),
-                              holidayTextStyle: TextStyle(color: Colors.black),
-                              defaultTextStyle: TextStyle(color: Colors.black),
-                              weekendTextStyle: TextStyle(color: Colors.black),
-                            ),
-                            // Allow today and future days to be selectable
-                            enabledDayPredicate: (day) {
-                              // Allow today and future days (today is >= to now)
-                              return !day.isBefore(DateTime.now().subtract(Duration(hours: 24)));
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Divider(indent: 20.0, endIndent: 20.0),
-                        Text('اختيار الوقت', style: TextStyle(fontSize: 18.0, color: Colors.black)),
-                        const SizedBox(height: 20),
-                        Directionality(
-                          textDirection: TextDirection.rtl,
-                          child: CustomDropdown(
-                            selectedValue: selectedTime,
-                            items: timeValues,
-                            title: 'اختر الوقت',
-                            onChanged: (newValue) {
-                              setState(() {
-                                selectedTime = newValue;
-                                visitHours = null;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        if(!widget.isNursingService && !widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
-                        if(!widget.isNursingService && !widget.isLabService!) Text('اختيار عدد ساعات الزيارة', style: TextStyle(fontSize: 18.0, color: Colors.black)),
-                        if(!widget.isNursingService && !widget.isLabService!) const SizedBox(height: 20),
-                        if(!widget.isNursingService && !widget.isLabService!) Directionality(
-                          textDirection: TextDirection.rtl,
-                          child: SizedBox(
-                            height: 30.0,
-                            child: ListView.builder(
-                              physics: const BouncingScrollPhysics(),
-                              scrollDirection: Axis.horizontal,
-                              itemCount: visitHoursCountList.length,
-                              itemBuilder: (context, index) {
-                                final value = visitHoursCountList[index];
-                                final isSelected = value == visitHours;
-
-                                return GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      visitHours = value;
-                                    });
-                                  },
-                                  child: Container(
-                                    width: 65.0,
-                                    margin: const EdgeInsets.symmetric(horizontal: 10.0),
-                                    padding: const EdgeInsets.fromLTRB(10.0, 5.0, 10.0, 0.0),
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? HomeCareTheme.primaryColor
-                                          : HomeCareTheme.primaryColor.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(20.0),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        value.toString(),
-                                        style: TextStyle(
-                                          color: isSelected ? Colors.white : Colors.black,
-                                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                );
+                              // Allow today and future days to be selectable
+                              enabledDayPredicate: (day) {
+                                // Allow today and future days (today is >= to now)
+                                return !day.isBefore(DateTime.now().subtract(Duration(hours: 24)));
                               },
                             ),
                           ),
-                        ),
-                        if(!widget.isNursingService && !widget.isLabService!) const SizedBox(height: 10),
-                        const Divider(indent: 20.0, endIndent: 20.0),
-                        AvailableNurses(),
-                        if(widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
-                        if(widget.isLabService!) LabTestTypes(),
-                        if(widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
-                        if(widget.isLabService!) AvailableLabs(),
-                        const Divider(indent: 20.0, endIndent: 20.0),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                          child: Row(
-                            children: [
-                              Directionality(
-                                textDirection: TextDirection.rtl,
-                                child: Switch(
-                                  value: isSwitched,
-                                  activeThumbColor: Colors.white,
-                                  activeTrackColor: HomeCareTheme.primaryColor,
-                                  inactiveThumbColor: HomeCareTheme.secondaryColor,
-                                  inactiveTrackColor: Colors.white,
-                                  onChanged: (bool newValue) {
-                                    setState(() {
-                                      isSwitched = newValue;
-                                      if(!newValue) {
-                                        showCityMsg = false;
-                                        showRegionMsg = false;
-                                        showAddressMsg = false;
-                                      }
-                                    });
-                                  },
-                                ),
+                          //const SizedBox(height: 20),
+                          const Divider(indent: 20.0, endIndent: 20.0),
+                          Text('اختيار الوقت', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+                          //const SizedBox(height: 20),
+                          Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: CustomDropdown(
+                              selectedValue: selectedTime,
+                              items: timeValues,
+                              title: 'اختر الوقت',
+                              onChanged: (newValue) {
+                                setState(() {
+                                  selectedTime = newValue;
+                                  visitHours = null;
+                                });
+                              },
+                            ),
+                          ),
+                          //const SizedBox(height: 10),
+                          if(!widget.isNursingService && !widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
+                          if(!widget.isNursingService && !widget.isLabService!) Text('اختيار عدد ساعات الزيارة', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+                          //if(!widget.isNursingService && !widget.isLabService!) const SizedBox(height: 20),
+                          if(!widget.isNursingService && !widget.isLabService!) Directionality(
+                            textDirection: TextDirection.rtl,
+                            child: SizedBox(
+                              height: 30.0,
+                              child: ListView.builder(
+                                physics: const BouncingScrollPhysics(),
+                                scrollDirection: Axis.horizontal,
+                                itemCount: visitHoursCountList.length,
+                                itemBuilder: (context, index) {
+                                  final value = visitHoursCountList[index];
+                                  final isSelected = value == visitHours;
+
+                                  return GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        visitHours = value;
+                                      });
+                                    },
+                                    child: Container(
+                                      width: 65.0,
+                                      margin: const .symmetric(horizontal: 10.0),
+                                      padding: const .fromLTRB(10.0, 5.0, 10.0, 0.0),
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? HomeCareTheme.primaryColor
+                                            : HomeCareTheme.primaryColor.withValues(alpha: 0.1),
+                                        borderRadius: .circular(20.0),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          value.toString(),
+                                          style: TextStyle(
+                                            color: isSelected ? Colors.white : Colors.black,
+                                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              const Spacer(),
-                              Text('الحجز لموقع آخر', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+                            ),
+                          ),
+                          //if(!widget.isNursingService && !widget.isLabService!) const SizedBox(height: 10),
+                          const Divider(indent: 20.0, endIndent: 20.0),
+                          AvailableNurses(),
+                          if(widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
+                          if(widget.isLabService!) LabTestTypes(),
+                          if(widget.isLabService!) const Divider(indent: 20.0, endIndent: 20.0),
+                          if(widget.isLabService!) AvailableLabs(),
+                          //const SizedBox(height: 20),
+                          const Divider(indent: 20.0, endIndent: 20.0),
+                          Text('شرح الحالة (اختياري)', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+                          Padding(
+                            padding: const .symmetric(horizontal: 5.0),
+                            child: CustomTextField(
+                              context,
+                              controller: noteController,
+                              fontSize: 14.0,
+                              fillColor: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
+                              maxLines: 3,
+                            ),
+                          ),
+                          const Divider(indent: 20.0, endIndent: 20.0),
+                          Column(
+                            crossAxisAlignment: .end,
+                            children: [
+                              Text('إرفاق ملف (اختياري)', style: TextStyle(fontSize: 18.0, color: Colors.black)),
+                              const SizedBox(height: 5.0),
+                              UploadButton(
+                                onPressed: showUploadOptionsBottomSheet,
+                                filePath: singleFilePath,
+                                fileName: singleFileName,
+                                loading: singleFileLoading,
+                                forFillSession: true,
+                              ),
                             ],
                           ),
-                        ),
-                        ExpandedSection(
-                          expand: isSwitched,
-                          height: 215.0,
-                          forwardDuration: const Duration(milliseconds: 700),
-                          reverseDuration: const Duration(milliseconds: 700),
-                          child: Container(
-                            padding: EdgeInsets.all(10.0),
-                            //margin: EdgeInsets.all(10.0),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20.0),
-                              color: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          const SizedBox(height: 10.0),
+                          Padding(
+                            padding: const .symmetric(horizontal: 10.0),
+                            child: Row(
                               children: [
                                 Directionality(
                                   textDirection: TextDirection.rtl,
-                                  child: CustomDropdown<City>(
-                                    selectedValue: selectedCity.isEmpty
-                                        ? null
-                                        : citiesController.cities.firstWhere(
-                                          (city) => city.name == selectedCity,
-                                      //orElse: () => citiesController.cities[0],
-                                    ),
-                                    items: citiesController.cities,
-                                    title: 'المدينة',
-                                    onChanged: (City? value) {
+                                  child: Switch(
+                                    value: isSwitched,
+                                    activeThumbColor: Colors.white,
+                                    activeTrackColor: HomeCareTheme.primaryColor,
+                                    inactiveThumbColor: HomeCareTheme.secondaryColor,
+                                    inactiveTrackColor: Colors.white,
+                                    onChanged: (bool newValue) {
                                       setState(() {
-                                        selectedCityId = value?.id ?? 0;
-                                        selectedCity = value?.name ?? '';
+                                        isSwitched = newValue;
+                                        if(!newValue) {
+                                          showCityMsg = false;
+                                          showRegionMsg = false;
+                                          showAddressMsg = false;
+                                        }
                                       });
                                     },
                                   ),
                                 ),
-                                showCityMsg ? Text('المدينة مطلوبة', style: TextStyle(fontSize: 12.0, color: Colors.red[900]!)) : const SizedBox(),
-                                Directionality(
-                                  textDirection: TextDirection.rtl,
-                                  child: CustomDropdown<Region>(
-                                    selectedValue: selectedRegion.isEmpty
-                                        ? null
-                                        : selectedCityId == 1 ? regionsController.regions1.firstWhere(
-                                          (region) => region.name == selectedRegion,
-                                      orElse: () => regionsController.regions1[0],
-                                    ) : regionsController.regions2.firstWhere(
-                                          (region) => region.name == selectedRegion,
-                                      orElse: () => regionsController.regions2[0],
-                                    ),
-                                    items: selectedCityId == 1 ? regionsController.regions1 : regionsController.regions2,
-                                    title: 'المنطقة',
-                                    onChanged: (Region? value) {
-                                      setState(() {
-                                        selectedRegionId = value?.id ?? 0;
-                                        selectedRegion = value?.name ?? '';
-                                      });
-                                    },
-                                  ),
-                                ),
-                                showRegionMsg ? Text('المنطقة مطلوبة', style: TextStyle(fontSize: 12.0, color: Colors.red[900]!)) : const SizedBox(),
-                                CustomTextFieldWithLabel(
-                                  context,
-                                  hintText: showAddressMsg ? 'العنوان مطلوب' : 'تفاصيل العنوان . . .',
-                                  isDetails: true,
-                                  controller: addressCtrl,
-                                  fontSize: 16.0,
-                                  borderRadius: 25.0,
-                                  hintColor: showAddressMsg ? Colors.red[900]! : Colors.grey,
-                                ),
+                                const Spacer(),
+                                Text('الحجز لموقع آخر', style: TextStyle(fontSize: 18.0, color: Colors.black)),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 20.0),
-                      child: RegisterButton(
-                        context,
-                        title: const Text('استمرار', style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold)),
-                        onPressed: pressMethod,
+                          ExpandedSection(
+                            expand: isSwitched,
+                            height: 215.0,
+                            forwardDuration: const Duration(milliseconds: 700),
+                            reverseDuration: const Duration(milliseconds: 700),
+                            child: Container(
+                              padding: .all(10.0),
+                              //margin: .all(10.0),
+                              decoration: BoxDecoration(
+                                borderRadius: .circular(20.0),
+                                color: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
+                              ),
+                              child: Column(
+                                mainAxisAlignment: .spaceBetween,
+                                children: [
+                                  Directionality(
+                                    textDirection: TextDirection.rtl,
+                                    child: CustomDropdown<City>(
+                                      selectedValue: selectedCity.isEmpty
+                                          ? null
+                                          : citiesController.cities.firstWhere(
+                                            (city) => city.name == selectedCity,
+                                        //orElse: () => citiesController.cities[0],
+                                      ),
+                                      items: citiesController.cities,
+                                      title: 'المدينة',
+                                      onChanged: (City? value) {
+                                        setState(() {
+                                          selectedCityId = value?.id ?? 0;
+                                          selectedCity = value?.name ?? '';
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  showCityMsg ? Text('المدينة مطلوبة', style: TextStyle(fontSize: 12.0, color: Colors.red[900]!)) : const SizedBox(),
+                                  Directionality(
+                                    textDirection: TextDirection.rtl,
+                                    child: CustomDropdown<Region>(
+                                      selectedValue: selectedRegion.isEmpty
+                                          ? null
+                                          : selectedCityId == 1 ? regionsController.regions1.firstWhere(
+                                            (region) => region.name == selectedRegion,
+                                        orElse: () => regionsController.regions1[0],
+                                      ) : regionsController.regions2.firstWhere(
+                                            (region) => region.name == selectedRegion,
+                                        orElse: () => regionsController.regions2[0],
+                                      ),
+                                      items: selectedCityId == 1 ? regionsController.regions1 : regionsController.regions2,
+                                      title: 'المنطقة',
+                                      onChanged: (Region? value) {
+                                        setState(() {
+                                          selectedRegionId = value?.id ?? 0;
+                                          selectedRegion = value?.name ?? '';
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                  showRegionMsg ? Text('المنطقة مطلوبة', style: TextStyle(fontSize: 12.0, color: Colors.red[900]!)) : const SizedBox(),
+                                  CustomTextFieldWithLabel(
+                                    context,
+                                    hintText: showAddressMsg ? 'العنوان مطلوب' : 'تفاصيل العنوان . . .',
+                                    isDetails: true,
+                                    controller: addressCtrl,
+                                    fontSize: 16.0,
+                                    borderRadius: 25.0,
+                                    hintColor: showAddressMsg ? Colors.red[900]! : Colors.grey,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                      Padding(
+                        padding: const .symmetric(horizontal: 10.0, vertical: 20.0),
+                        child: RegisterButton(
+                          context,
+                          title: const Text('استمرار', style: TextStyle(fontSize: 16.0, fontWeight: FontWeight.bold)),
+                          onPressed: pressMethod,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
+  String? singleFilePath;
+  String? singleFileName;
+  bool singleFileLoading = false;
+  int singleFileId = -1;
+  String singleFileUrl = '';
+  final ImagePicker _imagePicker = ImagePicker();
+
+  // New method to show bottom sheet with upload options
+  void showUploadOptionsBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: .only(
+              topLeft: Radius.circular(20.0),
+              topRight: Radius.circular(20.0),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10.0),
+              Container(
+                width: 40.0,
+                height: 4.0,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: .circular(2.0),
+                ),
+              ),
+              const SizedBox(height: 10.0),
+              ListTile(
+                leading: Container(
+                  padding: .all(8.0),
+                  decoration: BoxDecoration(
+                    color: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: .circular(10.0),
+                  ),
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: HomeCareTheme.primaryColor,
+                  ),
+                ),
+                title: Text(
+                  'التقاط صورة من الكاميرا',
+                  style: TextStyle(fontSize: 16.0),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickImageFromCamera();
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: .all(8.0),
+                  decoration: BoxDecoration(
+                    color: HomeCareTheme.primaryColor.withValues(alpha: 0.1),
+                    borderRadius: .circular(10.0),
+                  ),
+                  child: Icon(
+                    Icons.folder,
+                    color: HomeCareTheme.primaryColor,
+                  ),
+                ),
+                title: Text(
+                  'اختيار ملف من الجهاز',
+                  style: TextStyle(fontSize: 16.0),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  pickSingleFile();
+                },
+              ),
+              const SizedBox(height: 20.0),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // New method to pick image from camera
+  Future<void> pickImageFromCamera() async {
+    PermissionStatus status = await Permission.camera.request();
+
+    if (status.isGranted) {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          singleFilePath = image.path;
+          singleFileName = image.name;
+          singleFileLoading = true;
+        });
+        await uploadSingleFile();
+        setState(() {
+          singleFileLoading = false;
+        });
+      }
+    } else if (status.isDenied) {
+      Fluttertoast.showToast(
+        msg: "الرجاء السماح بالوصول إلى الكاميرا",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } else if (status.isPermanentlyDenied) {
+      Fluttertoast.showToast(
+        msg: "تم رفض الوصول إلى الكاميرا بشكل دائم. يرجى تمكين الإذن من إعدادات التطبيق.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      await openAppSettings();
+    }
+  }
+
+  // Updated method to handle single file picking from storage
+  Future<void> pickSingleFile() async {
+    final androidInfo = await DeviceInfoPlugin().androidInfo;
+    final sdkInt = androidInfo.version.sdkInt;
+    PermissionStatus status;
+
+    if (sdkInt >= 33) {
+      status = await Permission.photos.request();
+    } else {
+      status = await Permission.storage.request();
+    }
+
+    if (status.isGranted) {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+      );
+
+      if (result != null) {
+        setState(() {
+          singleFilePath = result.files.single.path;
+          singleFileName = result.files.single.name;
+          singleFileLoading = true;
+        });
+        await uploadSingleFile();
+        setState(() {
+          singleFileLoading = false;
+        });
+      }
+    } else if (status.isDenied) {
+      Fluttertoast.showToast(
+        msg: "الرجاء السماح بالوصول إلى التخزين لاختيار ملف",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    } else if (status.isPermanentlyDenied) {
+      Fluttertoast.showToast(
+        msg: "تم رفض الوصول إلى التخزين بشكل دائم. يرجى تمكين الإذن من إعدادات التطبيق.",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.grey[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+      await openAppSettings();
+    }
+  }
+
+  Future<void> uploadSingleFile() async {
+    try {
+      if (singleFilePath == null) return;
+
+      if (singleFileId == -1 && singleFileUrl.isEmpty) {
+        int result = await ConnectionController.uploadFile(
+          folderName: 3, // 3 according to the enum of the backend , 3 for patient attachments
+          token: sharedPrefsController.getToken(),
+          filePath: singleFilePath!,
+        );
+
+        if (result != -1) {
+          Fluttertoast.showToast(
+            msg: "تم تحميل الملف",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.grey[600],
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+          setState(() {
+            singleFileId = result;
+          });
+          debugPrint('Single File ID: $result');
+        } else {
+          Fluttertoast.showToast(
+            msg: "فشل تحميل الملف",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.red[600],
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+        }
+      } else {
+        // Update existing file
+        bool deleteSuccess = await ConnectionController.deleteFile(
+          token: sharedPrefsController.getToken(),
+          id: singleFileId,
+        );
+
+        if (deleteSuccess) {
+          int uploadResult = await ConnectionController.uploadFile(
+            folderName: 3, // 3 according to the enum of the backend , 3 for patient attachments
+            token: sharedPrefsController.getToken(),
+            filePath: singleFilePath!,
+          );
+
+          if (uploadResult != -1) {
+            Fluttertoast.showToast(
+              msg: "تم تحديث الملف",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.grey[600],
+              textColor: Colors.white,
+              fontSize: 16.0,
+            );
+            setState(() {
+              singleFileId = uploadResult;
+            });
+            debugPrint('Updated Single File ID: $uploadResult');
+          } else {
+            Fluttertoast.showToast(
+              msg: "فشل تحديث الملف",
+              toastLength: Toast.LENGTH_SHORT,
+              gravity: ToastGravity.BOTTOM,
+              timeInSecForIosWeb: 1,
+              backgroundColor: Colors.red[600],
+              textColor: Colors.white,
+              fontSize: 16.0,
+            );
+          }
+        } else {
+          Fluttertoast.showToast(
+            msg: "حدث خطأ أثناء حذف الملف القديم",
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.BOTTOM,
+            timeInSecForIosWeb: 1,
+            backgroundColor: Colors.red[600],
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in uploadSingleFile: $e');
+      Fluttertoast.showToast(
+        msg: "حدث خطأ غير متوقع",
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+        timeInSecForIosWeb: 1,
+        backgroundColor: Colors.red[600],
+        textColor: Colors.white,
+        fontSize: 16.0,
+      );
+    }
+  }
+
   int selectedNurseId = -1;
   Column AvailableNurses() {
     return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: .min,
+      crossAxisAlignment: .end,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: .spaceBetween,
           children: [
             IconButton(
               onPressed: () {
@@ -492,7 +815,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Column LabTestTypes() {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: .end,
       children: [
         Text('اختر أنواع التحليل', style: TextStyle(fontSize: 18.0, color: Colors.black)),
         const SizedBox(height: 10.0),
@@ -547,7 +870,7 @@ class _BookingScreenState extends State<BookingScreen> {
   Column AvailableLabs() {
     return Column(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.end,
+      crossAxisAlignment: .end,
       children: [
         Text('المخابر المتاحة (اختياري)', style: TextStyle(fontSize: 18.0, color: Colors.black)),
         const SizedBox(height: 10.0),
@@ -705,13 +1028,20 @@ class _BookingScreenState extends State<BookingScreen> {
       }
     }
 
+    // Get nurse name if selected
+    String? nurseName;
+    if (selectedNurseId != -1) {
+      final selectedNurse = listOfNurses.firstWhere((nurse) => nurse.id == selectedNurseId);
+      nurseName = '${selectedNurse.firstName} ${selectedNurse.lastName}';
+    }
+
     debugPrint(selectedDatesWithTime.toString()); // Example: ["2024-12-11T18:19:00.000Z"]
     Navigator.push(context, MaterialPageRoute(builder: (context) => BookingDetailsScreen(
       serviceId: widget.serviceId,
       nurseId: selectedNurseId,
       visitDurationInHours: (widget.isNursingService || widget.isLabService!) ? 0 : visitHours!,
-      regionId: selectedRegionId,
-      details: addressCtrl.text,
+      regionId: isSwitched ? selectedRegionId : sharedPrefsController.getRegionId(),
+      details: isSwitched ? addressCtrl.text : '',
       visitsDates: selectedDatesWithTime,
       selectedLabTests: selectedLabTestNames,
       labTestsIds: selectedLabTestIds,
@@ -719,11 +1049,18 @@ class _BookingScreenState extends State<BookingScreen> {
       forLabService: widget.isLabService!,
       selectedLabId: selectedLabId,
       selectedLabName: selectedLabName,
+      caseDescription: noteController.text,
+      attachmentId: singleFileId,
+      nurseName: nurseName,
+      city: isSwitched ? selectedCity : null,
+      region: isSwitched ? selectedRegion : null,
+      fileName: singleFileName,
     )));
   }
 
   bool isSwitched = false;
   final TextEditingController addressCtrl = TextEditingController();
+  final TextEditingController noteController = TextEditingController();
   SharedPrefsController sharedPrefsController = SharedPrefsController();
   CitiesController citiesController = Get.find();
   RegionsController regionsController = Get.find();

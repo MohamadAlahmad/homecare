@@ -6,7 +6,10 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: ">=3.5.0 <4.0.0"
+  sdk: ^3.10.0
+
+#environment:
+#  sdk: ">=3.5.0 <4.0.0"
 
 dependencies:
   flutter:
@@ -32,6 +35,7 @@ dependencies:
   flutter_local_notifications:
   screen_protector:
   file_picker: ^10.3.3
+  image_picker:
   dio:
   path_provider:
   path:
