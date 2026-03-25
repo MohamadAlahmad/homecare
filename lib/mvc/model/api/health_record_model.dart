@@ -50,7 +50,7 @@ class HealthRecordModel {
       medicalServiceName: json['medicalServiceName'] ?? '',
       medicalServiceTypeName: json['medicalServiceTypeName'] ?? '',
       visitDate: DateTime.tryParse(json['visitDate'] ?? '') ?? DateTime.now(),
-      caseDescription: json['caseDescription'],
+      caseDescription: json['caseDescription'] ?? '',
       geocodedAddress: json['geocodedAddress'] != null
           ? GeocodedAddress.fromJson(json['geocodedAddress'])
           : null,

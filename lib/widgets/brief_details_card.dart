@@ -9,10 +9,13 @@ Widget BriefDetailsCard({
   required DateTime date,
   required String location,
   int? visitDurationInHours,
+  String? caseDescription,
 }) {
-  String formattedDate = "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+  final formattedDate =
+      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
   return Container(
-    padding: EdgeInsets.all(10.0),
+    padding: const EdgeInsets.all(10.0),
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(20.0),
@@ -20,22 +23,28 @@ Widget BriefDetailsCard({
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if(serviceName != null) Row(
-          children: [
-            Image.asset('assets/icons/category.png', scale: 2.7, color: Colors.grey),
-            const SizedBox(width: 10.0),
-            Padding(
-              padding: const EdgeInsets.only(top: 5.0),
-              child: Text('اسم الخدمة     : ', style: TextStyle(fontSize: 14.0, color: Colors.grey)),
-            ),
-            Expanded(
-              child: Padding(
+        if (serviceName != null)
+          Row(
+            children: [
+              Image.asset('assets/icons/category.png', scale: 2.7, color: Colors.grey),
+              const SizedBox(width: 10.0),
+              Padding(
                 padding: const EdgeInsets.only(top: 5.0),
-                child: Text(serviceName, style: TextStyle(fontSize: 14.0, color: Colors.black), maxLines: 2, overflow: TextOverflow.ellipsis),
+                child: Text('اسم الخدمة     : ', style: TextStyle(fontSize: 14.0, color: Colors.grey)),
               ),
-            ),
-          ],
-        ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 5.0),
+                  child: Text(
+                    serviceName,
+                    style: const TextStyle(fontSize: 14.0, color: Colors.black),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
         Row(
           children: [
             Image.asset('assets/icons/person1.png', scale: 2.5, color: Colors.grey),
@@ -47,7 +56,12 @@ Widget BriefDetailsCard({
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 5.0),
-                child: Text(patientName, style: TextStyle(fontSize: 14.0, color: Colors.black), maxLines: 2, overflow: TextOverflow.ellipsis),
+                child: Text(
+                  patientName,
+                  style: const TextStyle(fontSize: 14.0, color: Colors.black),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
@@ -63,7 +77,12 @@ Widget BriefDetailsCard({
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 5.0),
-                child: Text(nurseName, style: TextStyle(fontSize: 14.0, color: Colors.black), maxLines: 2, overflow: TextOverflow.ellipsis),
+                child: Text(
+                  nurseName,
+                  style: const TextStyle(fontSize: 14.0, color: Colors.black),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
@@ -78,7 +97,7 @@ Widget BriefDetailsCard({
             ),
             Padding(
               padding: const EdgeInsets.only(top: 5.0),
-              child: Text(formattedDate, style: TextStyle(fontSize: 14.0, color: Colors.black)),
+              child: Text(formattedDate, style: const TextStyle(fontSize: 14.0, color: Colors.black)),
             ),
           ],
         ),
@@ -94,27 +113,64 @@ Widget BriefDetailsCard({
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.only(top: 5.0),
-                child: Text(location, style: TextStyle(fontSize: 14.0, color: Colors.black), maxLines: 3, overflow: TextOverflow.ellipsis),
+                child: Text(
+                  location,
+                  style: const TextStyle(fontSize: 14.0, color: Colors.black),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ),
           ],
         ),
-        if(visitDurationInHours != 0) Row(
-          children: [
-            Icon(Icons.numbers, color: Colors.grey, size: 20.0),
-            const SizedBox(width: 10.0),
-            Padding(
-              padding: const EdgeInsets.only(top: 5.0),
-              child: Text('ساعات الزيارة : ', style: TextStyle(fontSize: 14.0, color: Colors.grey)),
-            ),
-            Expanded(
-              child: Padding(
+
+        // ── Case description ──────────────────────────────────────────────
+        if (caseDescription != null && caseDescription.isNotEmpty)
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Icon(Icons.description_outlined, color: Colors.grey, size: 20.0),
+              const SizedBox(width: 10.0),
+              Padding(
                 padding: const EdgeInsets.only(top: 5.0),
-                child: Text(visitDurationInHours.toString(), style: TextStyle(fontSize: 14.0, color: Colors.black), maxLines: 2, overflow: TextOverflow.ellipsis),
+                child: Text('وصف الحالة    : ', style: TextStyle(fontSize: 14.0, color: Colors.grey)),
               ),
-            ),
-          ],
-        ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 5.0),
+                  child: Text(
+                    caseDescription,
+                    style: const TextStyle(fontSize: 14.0, color: Colors.black),
+                    maxLines: 4,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+        if (visitDurationInHours != null && visitDurationInHours != 0)
+          Row(
+            children: [
+              const Icon(Icons.numbers, color: Colors.grey, size: 20.0),
+              const SizedBox(width: 10.0),
+              Padding(
+                padding: const EdgeInsets.only(top: 5.0),
+                child: Text('ساعات الزيارة : ', style: TextStyle(fontSize: 14.0, color: Colors.grey)),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 5.0),
+                  child: Text(
+                    visitDurationInHours.toString(),
+                    style: const TextStyle(fontSize: 14.0, color: Colors.black),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
       ],
     ),
   );

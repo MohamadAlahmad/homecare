@@ -797,7 +797,7 @@ class _BookingScreenState extends State<BookingScreen> {
                       value: nurse.rate,
                       isSelected: nurse.isSelected,
                       disableStars: true,
-                      imagePath: '',
+                      imagePath: nurse.personalImageUrl,
                     ),
                   );
                 },

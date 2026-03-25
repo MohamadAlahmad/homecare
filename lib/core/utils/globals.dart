@@ -88,11 +88,6 @@ class Globals {
         forBookingThroughPackage: false,
       ),
     ),
-    /*ProfileItem(
-      title: 'الموقع',
-      iconUrl: 'assets/icons/location.png',
-      page: const Center(),
-    ),*/
     ProfileItem(
       title: 'السجل الصحي',
       iconUrl: 'assets/icons/document.png',

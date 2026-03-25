@@ -1527,7 +1527,10 @@ class ConnectionController {
     );
   }
 
-  static Future<PreviousCase?> getPreviousCase({required String token, required int patientId}) async {
+  static Future<PreviousCase?> getPreviousCase({
+    required String token,
+    required int patientId,
+  }) async {
     Uri url = Uri.parse(HomeCareApi.baseUrl + HomeCareApi.getLastSession)
         .replace(queryParameters: {'patientId': patientId.toString()});
 
@@ -1557,6 +1560,7 @@ class ConnectionController {
         }
       },
       onUnauthorizedAdditional: () => null,
+      onParamNotFound: () => null, // ← fixes the 404 crash
       onGone: null,
       responseBody: response['body'],
     );

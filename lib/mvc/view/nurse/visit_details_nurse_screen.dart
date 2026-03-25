@@ -332,7 +332,8 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                 nurseName: session.nurseName,
                 date: session.visitDate,
                 location: location,
-                visitDurationInHours: session.visitDurationInHours ?? 0,
+                caseDescription: session.caseDescription,
+                visitDurationInHours: session.visitDurationInHours,
               ),
 
               // ── Vital signs ──────────────────────────────────────────────
@@ -457,6 +458,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                 nurseName: session.nurseName,
                 date: session.visitDate,
                 location: location,
+                caseDescription: session.caseDescription,
               ),
               const SizedBox(height: 25.0),
               MenuText('التحاليل المخبرية:'),
@@ -580,6 +582,7 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
                   nurseName: session.nurseName,
                   date: prev.visitDate,
                   location: location,
+                  caseDescription: session.caseDescription,
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 15.0),
@@ -660,8 +663,8 @@ class _VisitDetailsNurseScreenState extends State<VisitDetailsNurseScreen> {
         child: SingleChildScrollView(
           child: FillSessionModal(
             title: 'تفاصيل الفاتورة',
-            price: (session.visitDurationInHours ?? 0) != 0
-                ? session.visitDurationInHours! *
+            price: (session.visitDurationInHours) != 0
+                ? session.visitDurationInHours *
                 _sessionBasePrice(session)
                 : _sessionBasePrice(session),
             additionalServiceNameCtrl: additionalServiceNameController,
