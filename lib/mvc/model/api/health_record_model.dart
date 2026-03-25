@@ -1,7 +1,7 @@
-import 'package:homecare/mvc/model/api/case.dart';
-import 'package:homecare/mvc/model/api/previous_case.dart';
 import 'package:homecare/mvc/model/api/lab_model.dart';
 import 'package:homecare/mvc/model/api/lab_test_model.dart';
+import 'package:homecare/mvc/model/api/previous_case.dart';
+import 'package:homecare/mvc/model/api/case.dart';
 
 class HealthRecordModel {
   int id;
@@ -10,12 +10,16 @@ class HealthRecordModel {
   String nurseName;
   String patientName;
   String medicalServiceName;
-  String visitDate;
+  String medicalServiceTypeName;
+  DateTime visitDate;
+  String? caseDescription;
   GeocodedAddress? geocodedAddress;
   PreviousCase? visitCase;
   LabModel? lab;
   List<LabTestModel> labTests;
+  List<PatientAttachment> patientAttachments;
   bool attachmentsAdded;
+  bool isDeleted;
 
   HealthRecordModel({
     required this.id,
@@ -24,12 +28,16 @@ class HealthRecordModel {
     required this.nurseName,
     required this.patientName,
     required this.medicalServiceName,
+    required this.medicalServiceTypeName,
     required this.visitDate,
+    this.caseDescription,
     required this.geocodedAddress,
     required this.visitCase,
     this.lab,
     this.labTests = const [],
+    this.patientAttachments = const [],
     required this.attachmentsAdded,
+    required this.isDeleted,
   });
 
   factory HealthRecordModel.fromJson(Map<String, dynamic> json) {
@@ -40,7 +48,9 @@ class HealthRecordModel {
       nurseName: json['nurseName'] ?? '',
       patientName: json['patientName'] ?? '',
       medicalServiceName: json['medicalServiceName'] ?? '',
-      visitDate: json['visitDate'] ?? '',
+      medicalServiceTypeName: json['medicalServiceTypeName'] ?? '',
+      visitDate: DateTime.tryParse(json['visitDate'] ?? '') ?? DateTime.now(),
+      caseDescription: json['caseDescription'],
       geocodedAddress: json['geocodedAddress'] != null
           ? GeocodedAddress.fromJson(json['geocodedAddress'])
           : null,
@@ -49,9 +59,15 @@ class HealthRecordModel {
           : null,
       lab: json['lab'] != null ? LabModel.fromJson(json['lab']) : null,
       labTests: (json['labTests'] as List?)
-          ?.map((labTestJson) => LabTestModel.fromJson(labTestJson))
-          .toList() ?? [],
+          ?.map((e) => LabTestModel.fromJson(e))
+          .toList() ??
+          [],
+      patientAttachments: (json['patientAttachments'] as List?)
+          ?.map((e) => PatientAttachment.fromJson(e))
+          .toList() ??
+          [],
       attachmentsAdded: json['attachmentsAdded'] ?? false,
+      isDeleted: json['isDeleted'] ?? false,
     );
   }
 
@@ -63,11 +79,33 @@ class HealthRecordModel {
       'nurseName': nurseName,
       'patientName': patientName,
       'medicalServiceName': medicalServiceName,
-      'visitDate': visitDate,
+      'medicalServiceTypeName': medicalServiceTypeName,
+      'visitDate': visitDate.toIso8601String(),
+      'caseDescription': caseDescription,
       'geocodedAddress': geocodedAddress?.toJson(),
       'lab': lab?.toJson(),
-      'labTests': labTests.map((labTest) => labTest.toJson()).toList(),
+      'labTests': labTests.map((e) => e.toJson()).toList(),
+      'patientAttachments': patientAttachments.map((e) => e.toJson()).toList(),
       'attachmentsAdded': attachmentsAdded,
+      'isDeleted': isDeleted,
     };
   }
+}
+
+// ── PatientAttachment ────────────────────────────────────────────────────────
+
+class PatientAttachment {
+  final String url;
+  final int id;
+
+  const PatientAttachment({required this.url, required this.id});
+
+  factory PatientAttachment.fromJson(Map<String, dynamic> json) {
+    return PatientAttachment(
+      url: json['url'] ?? '',
+      id: json['id'] ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {'url': url, 'id': id};
 }

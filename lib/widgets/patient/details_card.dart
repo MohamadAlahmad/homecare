@@ -207,21 +207,16 @@ DetailsCard({
   );
 }
 
-DetailsCardExtended({
-  required String visitDateTime,
+
+Widget DetailsCardExtended({
+  required DateTime visitDateTime,
   required String city,
   required String region,
   required String details,
   required String hours,
 }) {
-  // Parse the visitDateTime string to a DateTime object
-  final parsedDateTime = DateTime.parse(visitDateTime);
-
-  // Format the date as "yyyy-MM-dd"
-  final formattedDate = DateFormat('yyyy-MM-dd').format(parsedDateTime);
-
-  // Format the time as "HH:mm"
-  final formattedTime = DateFormat('HH:mm').format(parsedDateTime);
+  final formattedDate = DateFormat('yyyy-MM-dd').format(visitDateTime);
+  final formattedTime = DateFormat('HH:mm').format(visitDateTime);
 
   return Container(
     padding: EdgeInsets.symmetric(vertical: 10.0, horizontal: 20.0),

@@ -281,25 +281,11 @@ class _MainScreenNurseState extends State<MainScreenNurse> {
               );
             },
             onPressed: () {
-              List<LabTestModel> labTests = (caseItem.labTests as List)
-                  .map((item) => LabTestModel.fromJson(item))
-                  .toList();
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => VisitDetailsNurseScreen(
-                    patientId: caseItem.patientId,
-                    servicePrice: caseItem.price,
-                    serviceName: caseItem.medicalServiceName,
-                    patientName: caseItem.patientName,
-                    location: caseItem.geocodedAddress!.details.isNotEmpty
-                        ? '${caseItem.geocodedAddress!.governorateDto.name} ${caseItem.geocodedAddress!.regionDto.name} ${caseItem.geocodedAddress!.details}'
-                        : '(العنوان فارغ)',
                     sessionId: caseItem.id,
-                    forLabService: caseItem.labTests!.isNotEmpty,
-                    labTests: labTests,
-                    lab: caseItem.lab,
-                    visitDurationInHours: caseItem.visitDurationInHours,
                   ),
                 ),
               ).then((_) {

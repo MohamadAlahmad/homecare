@@ -1754,14 +1754,15 @@ class ConnectionController {
         return -1;
       }
     }
+
     try {
       var response = await request.send();
-      final responseString = await response.stream.bytesToString();
+      final responseString = await response.stream.bytesToString(); // Read only once
+
       if (response.statusCode == 200) {
-        final responseString = await response.stream.bytesToString();
         final json = jsonDecode(responseString);
         String imageUrl = '${HomeCareApi.baseUrl}/${json['url']}';
-        if (folderName ==1 && json['id'] != null) {
+        if (folderName == 1 && json['id'] != null) {
           prefsController.saveIdOfProfileImage(id: json['id']);
           prefsController.saveProfileImageUrl(imageUrl: imageUrl);
         }
